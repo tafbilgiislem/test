@@ -2,12 +2,11 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>SVG Uzaktan Düzenleyici</title>
+<title>SVG Debug Düzenleyici</title>
 </head>
-
 <body>
 
-<h2>SVG Düzenleyici</h2>
+<h2>SVG Düzenleyici (Debug)</h2>
 
 <div id="svg-container"></div>
 
@@ -15,41 +14,53 @@
 <input id="subtitleInput" placeholder="Yeni Alt Başlık"><br><br>
 
 <button onclick="preview()">Önizleme</button>
-<button onclick="save()">Kaydet</button>
+<button onclick="save()">Kaydet (Debug)</button>
 
 <script>
+const workerURL = "https://githubtoken.tafbilgiislem.workers.dev/"; // Worker URL
+const apiKey = "SVG_SECRET_12345"; // Worker ile eşleşen key
 
-// 1) SVG'yi raw üzerinden çek
+// SVG çek
 fetch("https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg")
   .then(r => r.text())
   .then(data => {
     document.getElementById("svg-container").innerHTML = data;
-  });
+    console.log("SVG yüklendi!");
+  })
+  .catch(err => console.error("SVG yüklenirken hata:", err));
 
 // Önizleme
 function preview(){
   const svg = document.querySelector("svg");
   svg.getElementById("title").textContent = document.getElementById("titleInput").value;
   svg.getElementById("subtitle").textContent = document.getElementById("subtitleInput").value;
+  console.log("Önizleme yapıldı");
 }
 
-// Save
+// Kaydet
 function save(){
   const svg = document.querySelector("svg").outerHTML;
-
-  fetch("https://githubtoken.tafbilgiislem.workers.dev", {
+  console.log("Kaydetme isteği gönderiliyor...");
+  
+  fetch(workerURL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": "MY_EDITOR_KEY"
+      "x-api-key": apiKey
     },
     body: JSON.stringify({ svg })
   })
-  .then(r => r.text())
-  .then(msg => alert(msg))
-  .catch(err => console.error(err));
+  .then(async r => {
+    console.log("HTTP Status:", r.status);
+    const text = await r.text();
+    console.log("Worker Response:", text);
+    alert(text);
+  })
+  .catch(err => {
+    console.error("Fetch hatası:", err);
+    alert("Hata oluştu, console'a bak!");
+  });
 }
-
 </script>
 
 </body>
