@@ -6,7 +6,7 @@
 
 <meta charset="UTF-8">
 
-<title>SVG Editor</title>
+<title>SVG CMS</title>
 
 </head>
 
@@ -14,21 +14,21 @@
 
 <h2>SVG Editor</h2>
 
-<div id="svg-container"></div>
+<div id="svg"></div>
 
 <br>
 
-<input id="titleInput" placeholder="Başlık">
+<input id="title" placeholder="Başlık">
 
 <br>
 
-<input id="subtitleInput" placeholder="Alt Başlık">
+<input id="subtitle" placeholder="Alt başlık">
 
 <br><br>
 
 <button onclick="preview()">
 
-Önizleme
+Preview
 
 </button>
 
@@ -40,52 +40,49 @@ Kaydet
 
 <script>
 
-const workerURL="https://githubtoken.tafbilgiislem.workers.dev";
+const workerURL="https://githubtoken.tafbilgiislem.workers.dev/";
 
 const apiKey="SVG_SECRET_12345";
 
-// SVG yükle
-fetch("https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg")
+fetch(
+
+"https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg"
+
+)
 
 .then(r=>r.text())
 
 .then(data=>{
 
-document.getElementById("svg-container").innerHTML=data;
+document.getElementById("svg").innerHTML=data;
 
-console.log("SVG yüklendi");
+});
 
-})
-
-.catch(e=>console.log(e));
-
-// preview
 function preview(){
 
 const svg=document.querySelector("svg");
 
 svg.getElementById("title").textContent=
 
-document.getElementById("titleInput").value;
+document.getElementById("title").value;
 
 svg.getElementById("subtitle").textContent=
 
-document.getElementById("subtitleInput").value;
-
-console.log("preview ok");
+document.getElementById("subtitle").value;
 
 }
 
-// save
 async function save(){
 
 try{
 
 const svg=document.querySelector("svg").outerHTML;
 
-console.log("gönderiliyor");
+const res=await fetch(
 
-const response=await fetch(workerURL,{
+workerURL,
+
+{
 
 method:"POST",
 
@@ -93,29 +90,28 @@ headers:{
 
 "Content-Type":"application/json",
 
-"x-api-key":"SVG_SECRET_12345"
+"x-api-key":apiKey
 
 },
 
-body:JSON.stringify({svg})
+body:JSON.stringify({
 
-});
+svg:svg
 
-console.log("status:",response.status);
+})
 
-const text=await response.text();
+}
 
-console.log("cevap:",text);
+);
+
+const text=await res.text();
 
 alert(text);
 
 }
-
 catch(e){
 
-console.log("fetch hata:",e);
-
-alert("fetch hata");
+alert("Fetch hata");
 
 }
 
