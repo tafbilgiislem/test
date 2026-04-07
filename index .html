@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SVG Slayt Düzenleyici</title>
+<title>Uzaktan SVG Düzenleyici</title>
 <style>
   body { font-family: Arial, sans-serif; padding: 20px; }
   #svg-container { border: 1px solid #ccc; width: 600px; height: 400px; margin-bottom: 20px; }
@@ -14,42 +14,43 @@
 </head>
 <body>
 
-<h1>SVG Slayt Düzenleyici</h1>
+<h1>Uzaktan SVG Düzenleyici</h1>
 
 <div id="svg-container">
-  <svg id="mysvg" width="600" height="400" xmlns="http://www.w3.org/2000/svg">
-    <rect width="600" height="400" fill="#f0f0f0"/>
-    <text id="slide-title" x="50" y="100" font-size="36" fill="#333">Merhaba Dünya</text>
-    <text id="slide-subtitle" x="50" y="150" font-size="24" fill="#666">İlk Slayt</text>
-  </svg>
+  <!-- SVG buraya yüklenecek -->
 </div>
 
 <form id="edit-form">
-  <label>
-    Başlık:
-    <input type="text" id="slide-title-input" placeholder="Başlığı yazın">
-  </label>
-  <label>
-    Alt Başlık:
-    <input type="text" id="slide-subtitle-input" placeholder="Alt başlığı yazın">
-  </label>
+  <label>Başlık: <input type="text" id="title-input"></label>
+  <label>Alt Başlık: <input type="text" id="subtitle-input"></label>
   <button type="button" id="update-btn">Güncelle</button>
 </form>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-  const svg = document.getElementById('mysvg');
-  const titleInput = document.getElementById('slide-title-input');
-  const subtitleInput = document.getElementById('slide-subtitle-input');
-  const btn = document.getElementById('update-btn');
+const svgURL = "https://github.com/tafbilgiislem/taf/blob/main/2.svg"; // Burayı kendi repo URL’ine değiştir
+const container = document.getElementById("svg-container");
 
-  btn.addEventListener("click", function() {
-    const titleElem = svg.getElementById('slide-title');
-    const subtitleElem = svg.getElementById('slide-subtitle');
+// 1️⃣ SVG dosyasını fetch et ve DOM’a ekle
+fetch(svgURL)
+  .then(res => res.text())
+  .then(svgText => {
+    container.innerHTML = svgText;
+  })
+  .catch(err => console.error("SVG yüklenemedi:", err));
 
-    if(titleElem && titleInput.value) titleElem.textContent = titleInput.value;
-    if(subtitleElem && subtitleInput.value) subtitleElem.textContent = subtitleInput.value;
-  });
+// 2️⃣ Form ile metinleri güncelle
+document.getElementById("update-btn").addEventListener("click", () => {
+  const svg = container.querySelector("svg");
+  if (!svg) return;
+
+  const titleElem = svg.getElementById("slide-title");
+  const subtitleElem = svg.getElementById("slide-subtitle");
+
+  const title = document.getElementById("title-input").value;
+  const subtitle = document.getElementById("subtitle-input").value;
+
+  if(titleElem && title) titleElem.textContent = title;
+  if(subtitleElem && subtitle) subtitleElem.textContent = subtitle;
 });
 </script>
 
