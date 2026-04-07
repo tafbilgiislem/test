@@ -1,66 +1,55 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Uzaktan SVG Düzenleyici</title>
-<style>
-  body { font-family: Arial, sans-serif; padding: 20px; }
-  #svg-container { border: 1px solid #ccc; width: 600px; height: 400px; margin-bottom: 20px; }
-  label { display: block; margin-top: 10px; }
-  input { width: 300px; padding: 5px; margin-top: 5px; }
-  button { margin-top: 10px; padding: 5px 10px; cursor: pointer; }
-</style>
+<title>SVG Uzaktan Düzenleyici</title>
 </head>
+
 <body>
 
-<h1>Uzaktan SVG Düzenleyici</h1>
+<h2>SVG Düzenleyici</h2>
 
-<div id="svg-container">
-  <!-- Buraya SVG yüklenecek -->
-</div>
+<div id="svg-container"></div>
 
-<form id="edit-form">
-  <label>Başlık: <input type="text" id="title-input"></label>
-  <label>Alt Başlık: <input type="text" id="subtitle-input"></label>
-  <label>Alt Bilgi: <input type="text" id="footer-input"></label>
-  <button type="button" id="update-btn">Güncelle</button>
-</form>
+<input id="titleInput" placeholder="Yeni Başlık"><br>
+<input id="subtitleInput" placeholder="Yeni Alt Başlık"><br><br>
+
+<button onclick="preview()">Önizleme</button>
+<button onclick="save()">Kaydet</button>
 
 <script>
-// ***** BURAYI KENDİ RAW SVG URL’İNLE DEĞİŞTİR *****
-const svgURL = "https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg";
 
-const container = document.getElementById("svg-container");
-
-// SVG’yi fetch edip DOM’a koy
-fetch(svgURL)
-  .then(res => res.text())
-  .then(svgText => {
-    container.innerHTML = svgText;
-  })
-  .catch(err => {
-    console.error("SVG yüklenemedi:", err);
-    container.innerHTML = "<p>SVG yüklenemedi.</p>";
+// 1) SVG'yi raw üzerinden çek
+fetch("https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg")
+  .then(r => r.text())
+  .then(data => {
+    document.getElementById("svg-container").innerHTML = data;
   });
 
-// Metinleri güncelle
-document.getElementById("update-btn").addEventListener("click", () => {
-  const svg = container.querySelector("svg");
-  if (!svg) return;
+// Önizleme
+function preview(){
+  const svg = document.querySelector("svg");
+  svg.getElementById("title").textContent = document.getElementById("titleInput").value;
+  svg.getElementById("subtitle").textContent = document.getElementById("subtitleInput").value;
+}
 
-  const titleElem = svg.getElementById("slide-title");
-  const subtitleElem = svg.getElementById("slide-subtitle");
-  const footerElem = svg.getElementById("footer-text");
+// Save
+function save(){
+  const svg = document.querySelector("svg").outerHTML;
 
-  const titleText = document.getElementById("title-input").value;
-  const subtitleText = document.getElementById("subtitle-input").value;
-  const footerText = document.getElementById("footer-input").value;
+  fetch("https://SVG-COMMIT-API.workers.dev", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": "MY_EDITOR_KEY"
+    },
+    body: JSON.stringify({ svg })
+  })
+  .then(r => r.text())
+  .then(msg => alert(msg))
+  .catch(err => console.error(err));
+}
 
-  if (titleElem && titleText) titleElem.textContent = titleText;
-  if (subtitleElem && subtitleText) subtitleElem.textContent = subtitleText;
-  if (footerElem && footerText) footerElem.textContent = footerText;
-});
 </script>
 
 </body>
