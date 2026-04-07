@@ -1,67 +1,128 @@
 <!DOCTYPE html>
+
 <html>
+
 <head>
+
 <meta charset="UTF-8">
-<title>SVG Debug Düzenleyici</title>
+
+<title>SVG Editor</title>
+
 </head>
+
 <body>
 
-<h2>SVG Düzenleyici (Debug)</h2>
+<h2>SVG Editor</h2>
 
 <div id="svg-container"></div>
 
-<input id="titleInput" placeholder="Yeni Başlık"><br>
-<input id="subtitleInput" placeholder="Yeni Alt Başlık"><br><br>
+<br>
 
-<button onclick="preview()">Önizleme</button>
-<button onclick="save()">Kaydet (Debug)</button>
+<input id="titleInput" placeholder="Başlık">
+
+<br>
+
+<input id="subtitleInput" placeholder="Alt Başlık">
+
+<br><br>
+
+<button onclick="preview()">
+
+Önizleme
+
+</button>
+
+<button onclick="save()">
+
+Kaydet
+
+</button>
 
 <script>
-const workerURL = "https://githubtoken.tafbilgiislem.workers.dev"; // Worker URL
-const apiKey = "SVG_SECRET_12345"; // Worker ile eşleşen key
 
-// SVG çek
+const workerURL="https://githubtoken.tafbilgiislem.workers.dev";
+
+const apiKey="SVG_SECRET_12345";
+
+// SVG yükle
 fetch("https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg")
-  .then(r => r.text())
-  .then(data => {
-    document.getElementById("svg-container").innerHTML = data;
-    console.log("SVG yüklendi!");
-  })
-  .catch(err => console.error("SVG yüklenirken hata:", err));
 
-// Önizleme
+.then(r=>r.text())
+
+.then(data=>{
+
+document.getElementById("svg-container").innerHTML=data;
+
+console.log("SVG yüklendi");
+
+})
+
+.catch(e=>console.log(e));
+
+// preview
 function preview(){
-  const svg = document.querySelector("svg");
-  svg.getElementById("title").textContent = document.getElementById("titleInput").value;
-  svg.getElementById("subtitle").textContent = document.getElementById("subtitleInput").value;
-  console.log("Önizleme yapıldı");
+
+const svg=document.querySelector("svg");
+
+svg.getElementById("title").textContent=
+
+document.getElementById("titleInput").value;
+
+svg.getElementById("subtitle").textContent=
+
+document.getElementById("subtitleInput").value;
+
+console.log("preview ok");
+
 }
 
-// Kaydet
-function save(){
-  const svg = document.querySelector("svg").outerHTML;
-  console.log("Kaydetme isteği gönderiliyor...");
-  
-  fetch(workerURL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey
-    },
-    body: JSON.stringify({ svg })
-  })
-  .then(async r => {
-    console.log("HTTP Status:", r.status);
-    const text = await r.text();
-    console.log("Worker Response:", text);
-    alert(text);
-  })
-  .catch(err => {
-    console.error("Fetch hatası:", err);
-    alert("Hata oluştu, console'a bak!");
-  });
+// save
+async function save(){
+
+try{
+
+const svg=document.querySelector("svg").outerHTML;
+
+console.log("gönderiliyor");
+
+const response=await fetch(workerURL,{
+
+method:"POST",
+
+headers:{
+
+"Content-Type":"application/json",
+
+"x-api-key":apiKey
+
+},
+
+body:JSON.stringify({svg})
+
+});
+
+console.log("status:",response.status);
+
+const text=await response.text();
+
+console.log("cevap:",text);
+
+alert(text);
+
 }
+
+catch(e){
+
+console.log("fetch hata:",e);
+
+alert("fetch hata");
+
+}
+
+}
+
 </script>
 
 </body>
+
 </html>
