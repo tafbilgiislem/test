@@ -33,21 +33,24 @@
     Alt Başlık:
     <input type="text" id="slide-subtitle-input" placeholder="Alt başlığı yazın">
   </label>
-  <button type="button" onclick="updateSVGText()">Güncelle</button>
+  <button type="button" id="update-btn">Güncelle</button>
 </form>
 
 <script>
-function updateSVGText() {
-    const svg = document.getElementById('mysvg');
-    const titleInput = document.getElementById('slide-title-input').value;
-    const subtitleInput = document.getElementById('slide-subtitle-input').value;
+document.addEventListener("DOMContentLoaded", function() {
+  const svg = document.getElementById('mysvg');
+  const titleInput = document.getElementById('slide-title-input');
+  const subtitleInput = document.getElementById('slide-subtitle-input');
+  const btn = document.getElementById('update-btn');
 
+  btn.addEventListener("click", function() {
     const titleElem = svg.getElementById('slide-title');
     const subtitleElem = svg.getElementById('slide-subtitle');
 
-    if(titleElem && titleInput) titleElem.textContent = titleInput;
-    if(subtitleElem && subtitleInput) subtitleElem.textContent = subtitleInput;
-}
+    if(titleElem && titleInput.value) titleElem.textContent = titleInput.value;
+    if(subtitleElem && subtitleInput.value) subtitleElem.textContent = subtitleInput.value;
+  });
+});
 </script>
 
 </body>
