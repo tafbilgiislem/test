@@ -16,7 +16,6 @@
 
 <h1>SVG Slayt Düzenleyici</h1>
 
-<!-- Inline SVG -->
 <div id="svg-container">
   <svg id="mysvg" width="600" height="400" xmlns="http://www.w3.org/2000/svg">
     <rect width="600" height="400" fill="#f0f0f0"/>
@@ -25,7 +24,6 @@
   </svg>
 </div>
 
-<!-- Düzenleme Formu -->
 <form id="edit-form">
   <label>
     Başlık:
@@ -41,7 +39,6 @@
 <script>
 function updateSVGText() {
     const svg = document.getElementById('mysvg');
-
     const titleInput = document.getElementById('slide-title-input').value;
     const subtitleInput = document.getElementById('slide-subtitle-input').value;
 
