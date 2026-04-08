@@ -1,124 +1,53 @@
-<!DOCTYPE html>
-
-<html>
-
-<head>
-
-<meta charset="UTF-8">
-
-<title>SVG CMS</title>
-
-</head>
-
-<body>
-
-<h2>SVG Editor</h2>
-
-<div id="svg"></div>
-
-<br>
-
-<input id="title" placeholder="Başlık">
-
-<br>
-
-<input id="subtitle" placeholder="Alt başlık">
-
-<br><br>
-
-<button onclick="preview()">
-
-Preview
-
-</button>
-
-<button onclick="save()">
-
-Kaydet
-
-</button>
+<div id="svg-container"></div>
+<input id="titleInput" placeholder="Başlık">
+<input id="subtitleInput" placeholder="Alt başlık">
+<button onclick="preview()">Önizleme</button>
+<button onclick="save()">Kaydet</button>
 
 <script>
-
-const workerURL="https://githubtoken.tafbilgiislem.workers.dev/";
-
+const workerURL="https://githubtoken.tafbilgiislem.workers.dev/"; // Worker URL
 const apiKey="SVG_SECRET_12345";
 
-fetch(
+// SVG yükle
+async function loadSVG(){
+  try{
+    const res=await fetch("https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg");
+    const text=await res.text();
+    document.getElementById("svg-container").innerHTML=text;
+  } catch(err){
+    console.error("SVG yüklenemedi:",err);
+  }
+}
+loadSVG();
 
-"https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg"
-
-)
-
-.then(r=>r.text())
-
-.then(data=>{
-
-document.getElementById("svg").innerHTML=data;
-
-});
-
+// Önizleme
 function preview(){
-
-const svg=document.querySelector("svg");
-
-svg.getElementById("title").textContent=
-
-document.getElementById("title").value;
-
-svg.getElementById("subtitle").textContent=
-
-document.getElementById("subtitle").value;
-
+  const svg = document.querySelector("#svg-container svg");
+  if(!svg){alert("SVG bulunamadı"); return;}
+  const title = svg.getElementById("title");
+  const subtitle = svg.getElementById("subtitle");
+  if(title) title.textContent = document.getElementById("titleInput").value;
+  if(subtitle) subtitle.textContent = document.getElementById("subtitleInput").value;
 }
 
+// Kaydet
 async function save(){
-
-try{
-
-const svg=document.querySelector("svg").outerHTML;
-
-const res=await fetch(
-
-workerURL,
-
-{
-
-method:"POST",
-
-headers:{
-
-"Content-Type":"application/json",
-
-"x-api-key":apiKey
-
-},
-
-body:JSON.stringify({
-
-svg:svg
-
-})
-
+  const svg = document.querySelector("#svg-container svg");
+  if(!svg){alert("SVG bulunamadı"); return;}
+  try{
+    const response=await fetch(workerURL,{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "x-api-key":apiKey
+      },
+      body: JSON.stringify({ svg: svg.outerHTML })
+    });
+    const text=await response.text();
+    alert(text);
+  } catch(err){
+    console.error("Fetch hata:",err);
+    alert("Fetch hata, console'a bak");
+  }
 }
-
-);
-
-const text=await res.text();
-
-alert(text);
-
-}
-catch(e){
-
-alert("Fetch hata");
-
-}
-
-}
-
 </script>
-
-</body>
-
-</html>
