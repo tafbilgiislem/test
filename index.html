@@ -74,8 +74,8 @@ async function loadSVG() {
     const svg = document.querySelector("#svg-container svg");
     if (svg) {
       // inputları senkronize et
-      const title = svg.getElementById("text13");
-      const subtitle = svg.getElementById("text14");
+      const title = svg.getElementById("title");       // SVG text id
+      const subtitle = svg.getElementById("subtitle"); // SVG text id
       if (title) document.getElementById("titleInput").value = title.textContent;
       if (subtitle) document.getElementById("subtitleInput").value = subtitle.textContent;
 
@@ -91,15 +91,18 @@ async function loadSVG() {
   }
 }
 
-// Sayfa açıldığında yükle
+// Sayfa açıldığında SVG yükle
 loadSVG();
 
 // Önizleme fonksiyonu
 function preview() {
   const svg = document.querySelector("#svg-container svg");
   if (!svg) { alert("SVG bulunamadı"); return; }
+
+  // SVG text id’leri ile eşleşmeli
   const title = svg.getElementById("title");
   const subtitle = svg.getElementById("subtitle");
+
   if (title) title.textContent = document.getElementById("titleInput").value;
   if (subtitle) subtitle.textContent = document.getElementById("subtitleInput").value;
 }
