@@ -5,18 +5,38 @@
 <title>SVG Live Editor - YPM</title>
 <style>
   body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+  
   #svg-container {
     border: 1px solid #ccc;
     width: 100%;
     max-width: 800px;
-    min-height: 300px;
+    min-height: 400px; /* daha yüksek, preview tam görünür */
     margin-bottom: 20px;
+    overflow: visible; /* SVG taşmasına izin ver */
   }
-  #svg-container svg { width: 100%; height: 100%; display: block; }
-  input { display: block; width: 100%; max-width: 400px; margin: 5px 0; padding: 5px; }
-  button { margin: 5px 5px 15px 0; padding: 5px 10px; }
+
+  #svg-container svg {
+    width: 100%;
+    height: auto; /* orantıyı korur */
+    display: block;
+  }
+
+  input {
+    display: block;
+    width: 100%;
+    max-width: 400px;
+    margin: 5px 0;
+    padding: 5px;
+    box-sizing: border-box;
+  }
+
+  button {
+    margin: 5px 5px 15px 0;
+    padding: 5px 10px;
+  }
+
   @media (max-width: 500px) {
-    #svg-container { min-height: 200px; }
+    #svg-container { min-height: 250px; }
     input { width: 100%; max-width: 100%; }
   }
 </style>
@@ -34,7 +54,7 @@
 <button onclick="save()">Kaydet</button>
 
 <script>
-// Worker ve SVG ayarları
+// Ayarlar
 const workerURL = "https://githubtoken.tafbilgiislem.workers.dev/"; // Worker URL
 const apiKey = "SVG_SECRET_12345";                     // Worker API Key
 const svgRawURL = "https://tafbilgiislem.github.io/ypm/slayt.svg"; // SVG dosya URL
@@ -48,10 +68,16 @@ async function loadSVG() {
 
     const svg = document.querySelector("#svg-container svg");
     if (svg) {
+      // inputları senkronize et
       const title = svg.getElementById("text13");
       const subtitle = svg.getElementById("text14");
       if (title) document.getElementById("titleInput").value = title.textContent;
       if (subtitle) document.getElementById("subtitleInput").value = subtitle.textContent;
+
+      // SVG için görünürlük ve oran ayarı
+      svg.setAttribute("width", "100%");
+      svg.setAttribute("height", "auto");
+      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
     }
 
     console.log("SVG yüklendi");
@@ -60,7 +86,7 @@ async function loadSVG() {
   }
 }
 
-// Sayfa açıldığında yükle
+// Sayfa açıldığında SVG yükle
 loadSVG();
 
 // Önizleme fonksiyonu
@@ -73,12 +99,11 @@ function preview() {
   if (subtitle) subtitle.textContent = document.getElementById("subtitleInput").value;
 }
 
-// Save fonksiyonu (Worker üzerinden commit) + DOM anında güncelleme
+// Save fonksiyonu (Worker üzerinden commit) + DOM anında güncelle
 async function save() {
   const svg = document.querySelector("#svg-container svg");
   if (!svg) { alert("SVG bulunamadı"); return; }
 
-  // Preview'deki son değişiklikler zaten SVG'de
   const updatedSVG = svg.outerHTML;
 
   try {
@@ -94,7 +119,7 @@ async function save() {
     const text = await res.text();
     alert(text);
 
-    // ⚡ Kaydetme sonrası DOM’u güncelle → input ve SVG aynı kalır
+    // Kaydetme sonrası DOM’u güncelle → input ve SVG aynı kalır
     const title = svg.getElementById("title");
     const subtitle = svg.getElementById("subtitle");
     if (title) title.textContent = document.getElementById("titleInput").value;
