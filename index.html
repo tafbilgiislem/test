@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <title>SVG Live Editor</title>
 <style>
-  #svg-container svg { width: 100%; height: auto; border: 1px solid #ccc; }
-  input { width: 300px; margin: 5px 0; padding: 5px; }
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  #svg-container { border: 1px solid #ccc; width: 100%; max-width: 800px; min-height: 300px; margin-bottom: 20px; }
+  #svg-container svg { width: 100%; height: 100%; display: block; }
+  input { display: block; width: 300px; margin: 5px 0; padding: 5px; }
   button { margin: 5px 5px 15px 0; padding: 5px 10px; }
 </style>
 </head>
@@ -13,28 +15,31 @@
 
 <h2>SVG Live Editor</h2>
 
+<!-- SVG gösterilecek container -->
 <div id="svg-container"></div>
 
+<!-- Input alanları -->
 <input id="titleInput" placeholder="Başlık">
-<br>
 <input id="subtitleInput" placeholder="Alt başlık">
-<br><br>
 
+<!-- Butonlar -->
 <button onclick="preview()">Önizleme</button>
 <button onclick="save()">Kaydet</button>
 
 <script>
-const workerURL = "https://githubtoken.tafbilgiislem.workers.dev/"; // Worker URL
-const apiKey = "SVG_SECRET_12345";                     // Worker API Key
-const svgRawURL = "https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg"; // SVG dosya URL
+// Worker ve SVG URL ayarları
+const workerURL = "https://githubtoken.tafbilgiislem.workers.dev/";
+const apiKey = "SVG_SECRET_12345";
+const svgRawURL = "https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg";
 
-// SVG yükleme (cache bypass + input sync)
+// SVG yükleme (cache bypass)
 async function loadSVG() {
   try {
     const res = await fetch(svgRawURL + "?t=" + Date.now());
     const text = await res.text();
     document.getElementById("svg-container").innerHTML = text;
 
+    // Input alanlarını SVG ile senkronize et
     const svg = document.querySelector("#svg-container svg");
     if (svg) {
       const title = svg.getElementById("title");
@@ -49,22 +54,20 @@ async function loadSVG() {
   }
 }
 
-// sayfa açıldığında SVG yükle
+// Sayfa açıldığında yükle
 loadSVG();
 
-// Preview – inputlara yazı yazınca SVG anında değişir
+// Preview fonksiyonu
 function preview() {
   const svg = document.querySelector("#svg-container svg");
   if (!svg) { alert("SVG bulunamadı"); return; }
-
   const title = svg.getElementById("title");
   const subtitle = svg.getElementById("subtitle");
-
   if (title) title.textContent = document.getElementById("titleInput").value;
   if (subtitle) subtitle.textContent = document.getElementById("subtitleInput").value;
 }
 
-// Save – Worker üzerinden commit gönder + otomatik reload
+// Save fonksiyonu
 async function save() {
   const svg = document.querySelector("#svg-container svg");
   if (!svg) { alert("SVG bulunamadı"); return; }
@@ -82,7 +85,7 @@ async function save() {
     const text = await res.text();
     alert(text);
 
-    // Commit sonrası 1.5 saniye bekle, sonra reload
+    // Commit sonrası reload
     setTimeout(() => { loadSVG(); }, 1500);
 
   } catch (err) {
