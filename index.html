@@ -34,7 +34,7 @@
 <button onclick="save()">Kaydet</button>
 
 <script>
-// Ayarlar
+// Worker ve SVG ayarları
 const workerURL = "https://githubtoken.tafbilgiislem.workers.dev/"; // Worker URL
 const apiKey = "SVG_SECRET_12345";                     // Worker API Key
 const svgRawURL = "https://tafbilgiislem.github.io/ypm/slayt.svg"; // SVG dosya URL
@@ -46,7 +46,6 @@ async function loadSVG() {
     const text = await res.text();
     document.getElementById("svg-container").innerHTML = text;
 
-    // Inputları SVG ile senkronize et
     const svg = document.querySelector("#svg-container svg");
     if (svg) {
       const title = svg.getElementById("title");
@@ -61,7 +60,7 @@ async function loadSVG() {
   }
 }
 
-// Sayfa açıldığında SVG yükle
+// Sayfa açıldığında yükle
 loadSVG();
 
 // Önizleme fonksiyonu
@@ -74,10 +73,13 @@ function preview() {
   if (subtitle) subtitle.textContent = document.getElementById("subtitleInput").value;
 }
 
-// Save fonksiyonu (Worker üzerinden commit) + otomatik reload
+// Save fonksiyonu (Worker üzerinden commit) + DOM anında güncelleme
 async function save() {
   const svg = document.querySelector("#svg-container svg");
   if (!svg) { alert("SVG bulunamadı"); return; }
+
+  // Preview'deki son değişiklikler zaten SVG'de
+  const updatedSVG = svg.outerHTML;
 
   try {
     const res = await fetch(workerURL, {
@@ -86,14 +88,17 @@ async function save() {
         "Content-Type": "application/json",
         "x-api-key": apiKey
       },
-      body: JSON.stringify({ svg: svg.outerHTML })
+      body: JSON.stringify({ svg: updatedSVG })
     });
 
     const text = await res.text();
     alert(text);
 
-    // Commit sonrası 0.5 saniye sonra reload
-    setTimeout(() => { loadSVG(); }, 500);
+    // ⚡ Kaydetme sonrası DOM’u güncelle → input ve SVG aynı kalır
+    const title = svg.getElementById("title");
+    const subtitle = svg.getElementById("subtitle");
+    if (title) title.textContent = document.getElementById("titleInput").value;
+    if (subtitle) subtitle.textContent = document.getElementById("subtitleInput").value;
 
   } catch (err) {
     console.error("Fetch hata:", err);
