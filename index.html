@@ -2,161 +2,177 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>SVG Live Editor 1920x1080 - YPM</title>
+<title>SVG Live Editor PRO</title>
+
 <style>
-  body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
 
-  /* Responsive 16:9 container */
-  #svg-container {
-    position: relative;
-    width: 100%;
-    max-width: 1920px;
-    margin-bottom: 20px;
-    padding-top: 56.25%; /* 1080 / 1920 = 0.5625 */
-    border: 1px solid #ccc;
-    overflow: visible;
-  }
+body{
+font-family:Arial;
+padding:20px;
+}
 
-  #svg-container svg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
+#svg-container{
 
-  input {
-    display: block;
-    width: 100%;
-    max-width: 400px;
-    margin: 5px 0;
-    padding: 5px;
-    box-sizing: border-box;
-  }
+width:100%;
+max-width:1200px;
+aspect-ratio:16/9;
 
-  button {
-    margin: 5px 5px 15px 0;
-    padding: 5px 10px;
-  }
+border:1px solid #ccc;
 
-  @media (max-width: 800px) {
-    #svg-container { padding-top: 56.25%; }
-    input { width: 100%; max-width: 100%; }
-  }
+margin-bottom:20px;
+
+}
+
+#svg-container svg{
+
+width:100%;
+height:100%;
+
+}
+
+input{
+
+display:block;
+width:350px;
+
+margin:5px;
+padding:6px;
+
+}
+
+button{
+
+padding:6px 15px;
+margin:5px;
+
+cursor:pointer;
+
+}
+
 </style>
+
 </head>
+
 <body>
 
-<h2>SVG Live Editor - 1920x1080 YPM</h2>
+<h2>SVG Live Editor</h2>
 
 <div id="svg-container"></div>
 
-<input id="titleInput" placeholder="Başlık">
-<input id="subtitleInput" placeholder="Alt başlık">
+<input id="titleInput">
+<input id="subtitleInput">
 
-<button onclick="preview()">Önizleme</button>
-<button onclick="save()">Kaydet</button>
+<button onclick="preview()">Preview</button>
+
+<button onclick="save()">Save</button>
+
+<button onclick="undo()">Undo</button>
 
 <script>
-// Worker ve SVG ayarları
-const workerURL = "https://githubtoken.tafbilgiislem.workers.dev/"; // Worker URL
-const apiKey = "SVG_SECRET_12345";                     // Worker API Key
-const svgRawURL = "https://tafbilgiislem.github.io/ypm/slayt.svg"; // SVG dosya URL
 
-// SVG yükleme ve cache bypass
-async function loadSVG() {
-  try {
-    const res = await fetch(svgRawURL + "?t=" + Date.now());
-    const text = await res.text();
+const workerURL="https://githubtoken.tafbilgiislem.workers.dev/";
+const apiKey="SVG_SECRET_12345";
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, "image/svg+xml");
-    const svgNode = doc.querySelector("svg");
+const svgURL="https://raw.githubusercontent.com/tafbilgiislem/ypm/refs/heads/main/slayt.svg";
 
-    if (!svgNode) { alert("SVG yüklenemedi!"); return; }
+let lastState="";
 
-    // inputları senkronize et
-    const title = svgNode.getElementById("title");
-    const subtitle = svgNode.getElementById("subtitle");
-    if (title) document.getElementById("titleInput").value = title.textContent;
-    if (subtitle) document.getElementById("subtitleInput").value = subtitle.textContent;
+async function loadSVG(){
 
-    // SVG görünürlük ve boyut ayarı
-    svgNode.setAttribute("width", "100%");
-    svgNode.setAttribute("height", "100%");
-    svgNode.setAttribute("preserveAspectRatio", "xMidYMid meet");
+const res=await fetch(svgURL+"?"+Date.now());
 
-    const container = document.getElementById("svg-container");
-    container.innerHTML = "";
-    container.appendChild(svgNode);
+const text=await res.text();
 
-    console.log("SVG yüklendi ve hazır");
+document.getElementById("svg-container").innerHTML=text;
 
-  } catch (err) {
-    console.error("SVG yüklenemedi:", err);
-  }
+const svg=document.querySelector("svg");
+
+svg.setAttribute("viewBox","0 0 1920 1080");
+
+svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+
+lastState=svg.outerHTML;
+
+syncInputs();
+
 }
 
-// Sayfa açıldığında SVG yükle
+function syncInputs(){
+
+const svg=document.querySelector("svg");
+
+const t=svg.getElementById("title");
+
+const s=svg.getElementById("subtitle");
+
+if(t)
+titleInput.value=t.textContent;
+
+if(s)
+subtitleInput.value=s.textContent;
+
+}
+
+function preview(){
+
+const svg=document.querySelector("svg");
+
+lastState=svg.outerHTML;
+
+const t=svg.getElementById("title");
+
+const s=svg.getElementById("subtitle");
+
+if(t)
+t.textContent=titleInput.value;
+
+if(s)
+s.textContent=subtitleInput.value;
+
+}
+
+function undo(){
+
+document.querySelector("svg").outerHTML=lastState;
+
+syncInputs();
+
+}
+
+async function save(){
+
+const svg=document.querySelector("svg");
+
+const data=svg.outerHTML;
+
+await fetch(workerURL,{
+
+method:"POST",
+
+headers:{
+
+"Content-Type":"application/json",
+
+"x-api-key":apiKey
+
+},
+
+body:JSON.stringify({
+
+svg:data
+
+})
+
+});
+
+alert("SVG kaydedildi");
+
+}
+
 loadSVG();
 
-// Önizleme fonksiyonu
-function preview() {
-  const svg = document.querySelector("#svg-container svg");
-  if (!svg) { alert("SVG bulunamadı"); return; }
-
-  const title = svg.getElementById("title");
-  const subtitle = svg.getElementById("subtitle");
-
-  if (title) title.textContent = document.getElementById("titleInput").value;
-  if (subtitle) subtitle.textContent = document.getElementById("subtitleInput").value;
-}
-
-// Save fonksiyonu (Worker üzerinden commit) + DOM anında güncelle
-async function save() {
-  const svg = document.querySelector("#svg-container svg");
-  if (!svg) { alert("SVG bulunamadı"); return; }
-
-  const updatedSVG = svg.outerHTML;
-
-  try {
-    const res = await fetch(workerURL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey
-      },
-      body: JSON.stringify({ svg: updatedSVG })
-    });
-
-    const text = await res.text();
-    alert(text);
-
-    // Worker’dan gelen SVG'yi parse edip boyutu koru
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(updatedSVG, "image/svg+xml");
-    const svgNode = doc.querySelector("svg");
-    svgNode.setAttribute("width", "100%");
-    svgNode.setAttribute("height", "100%");
-    svgNode.setAttribute("preserveAspectRatio", "xMidYMid meet");
-
-    const container = document.getElementById("svg-container");
-    container.innerHTML = "";
-    container.appendChild(svgNode);
-
-    // Inputları tekrar senkronize et
-    const title = svgNode.getElementById("title");
-    const subtitle = svgNode.getElementById("subtitle");
-    if (title) title.textContent = document.getElementById("titleInput").value;
-    if (subtitle) subtitle.textContent = document.getElementById("subtitleInput").value;
-
-  } catch (err) {
-    console.error("Fetch hatası:", err);
-    alert("Fetch hatası, console'a bak!");
-  }
-}
 </script>
 
 </body>
+
 </html>
