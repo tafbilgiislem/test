@@ -1,177 +1,85 @@
 <!DOCTYPE html>
-
 <html>
-
 <head>
-
 <meta charset="UTF-8">
-
-<title>SVG Editor</title>
-
+<title>SVG CMS Live Editor</title>
+<style>
+#svg-container svg { width: 100%; height: auto; border: 1px solid #ccc; }
+</style>
 </head>
-
 <body>
 
-<h2>SVG Editor</h2>
+<h2>SVG Live Editor</h2>
 
 <div id="svg-container"></div>
 
 <br>
-
 <input id="titleInput" placeholder="Başlık">
-
 <br>
-
 <input id="subtitleInput" placeholder="Alt başlık">
-
 <br><br>
 
-<button onclick="preview()">
-
-Preview
-
-</button>
-
-<button onclick="save()">
-
-Kaydet
-
-</button>
+<button onclick="preview()">Önizleme</button>
+<button onclick="save()">Kaydet</button>
 
 <script>
+const workerURL = "https://githubtoken.tafbilgiislem.workers.dev/";
+const apiKey = "SVG_SECRET_12345";
+const svgRawURL = "https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg";
 
-const workerURL="https://githubtoken.tafbilgiislem.workers.dev/";
-
-const apiKey="SVG_SECRET_12345";
-
-const svgURL="https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg";
-
-// SVG yükleme (cache bypass ile)
-async function loadSVG(){
-
-const res=await fetch(
-
-svgURL+"?t="+Date.now()
-
-);
-
-const text=await res.text();
-
-document.getElementById("svg-container").innerHTML=text;
-
-console.log("SVG reload edildi");
-
+// SVG yükleme fonksiyonu (cache bypass)
+async function loadSVG() {
+  try {
+    const res = await fetch(svgRawURL + "?t=" + Date.now());
+    const text = await res.text();
+    document.getElementById("svg-container").innerHTML = text;
+    console.log("SVG yüklendi");
+  } catch (err) {
+    console.error("SVG yüklenemedi:", err);
+  }
 }
 
-// sayfa açılınca yükle
+// sayfa açılır açılmaz SVG yükle
 loadSVG();
 
+// Önizleme
+function preview() {
+  const svg = document.querySelector("#svg-container svg");
+  if (!svg) { alert("SVG bulunamadı"); return; }
 
-// preview
-function preview(){
+  const title = svg.getElementById("title");
+  const subtitle = svg.getElementById("subtitle");
 
-const svg=document.querySelector("#svg-container svg");
-
-if(!svg){
-
-alert("SVG bulunamadı");
-
-return;
-
+  if (title) title.textContent = document.getElementById("titleInput").value;
+  if (subtitle) subtitle.textContent = document.getElementById("subtitleInput").value;
 }
 
-const title=svg.getElementById("title");
+// Save (Worker üzerinden commit) + otomatik reload
+async function save() {
+  const svg = document.querySelector("#svg-container svg");
+  if (!svg) { alert("SVG bulunamadı"); return; }
 
-const subtitle=svg.getElementById("subtitle");
+  try {
+    const res = await fetch(workerURL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey
+      },
+      body: JSON.stringify({ svg: svg.outerHTML })
+    });
+    const text = await res.text();
+    alert(text);
 
-if(title){
+    // Commit sonrası 1.5 saniye bekle, sonra reload
+    setTimeout(() => { loadSVG(); }, 1500);
 
-title.textContent=
-
-document.getElementById("titleInput").value;
-
+  } catch (err) {
+    console.error("Fetch hata:", err);
+    alert("Fetch hatası, console'a bak!");
+  }
 }
-
-if(subtitle){
-
-subtitle.textContent=
-
-document.getElementById("subtitleInput").value;
-
-}
-
-}
-
-
-// save
-async function save(){
-
-const svg=document.querySelector("#svg-container svg");
-
-if(!svg){
-
-alert("SVG yok");
-
-return;
-
-}
-
-try{
-
-console.log("commit gönderiliyor");
-
-const response=await fetch(
-
-workerURL,
-
-{
-
-method:"POST",
-
-headers:{
-
-"Content-Type":"application/json",
-
-"x-api-key":apiKey
-
-},
-
-body:JSON.stringify({
-
-svg:svg.outerHTML
-
-})
-
-}
-
-);
-
-const text=await response.text();
-
-console.log(text);
-
-alert(text);
-
-// commit sonrası otomatik reload
-setTimeout(()=>{
-
-loadSVG();
-
-},1500);
-
-}
-catch(e){
-
-console.log(e);
-
-alert("fetch hata");
-
-}
-
-}
-
 </script>
 
 </body>
-
 </html>
