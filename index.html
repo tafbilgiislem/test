@@ -4,21 +4,45 @@
 <meta charset="UTF-8">
 <title>SVG Live Editor</title>
 <style>
-  body { font-family: Arial, sans-serif; padding: 20px; }
-  #svg-container { border: 1px solid #ccc; width: 100%; max-width: 800px; min-height: 300px; margin-bottom: 20px; }
-  #svg-container svg { width: 100%; height: 100%; display: block; }
-  input { display: block; width: 300px; margin: 5px 0; padding: 5px; }
-  button { margin: 5px 5px 15px 0; padding: 5px 10px; }
+  body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+  #svg-container {
+    border: 1px solid #ccc;
+    width: 100%;
+    max-width: 800px;
+    min-height: 300px;
+    margin-bottom: 20px;
+  }
+  #svg-container svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  input {
+    display: block;
+    width: 100%;
+    max-width: 400px;
+    margin: 5px 0;
+    padding: 5px;
+    box-sizing: border-box;
+  }
+  button {
+    margin: 5px 5px 15px 0;
+    padding: 5px 10px;
+  }
+  @media (max-width: 500px) {
+    #svg-container { min-height: 200px; }
+    input { width: 100%; max-width: 100%; }
+  }
 </style>
 </head>
 <body>
 
 <h2>SVG Live Editor</h2>
 
-<!-- SVG gösterilecek container -->
+<!-- SVG container -->
 <div id="svg-container"></div>
 
-<!-- Input alanları -->
+<!-- Inputlar -->
 <input id="titleInput" placeholder="Başlık">
 <input id="subtitleInput" placeholder="Alt başlık">
 
@@ -28,18 +52,17 @@
 
 <script>
 // Worker ve SVG URL ayarları
-const workerURL = "https://githubtoken.tafbilgiislem.workers.dev/";
-const apiKey = "SVG_SECRET_12345";
-const svgRawURL = "https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg";
+const workerURL = "https://githubtoken.tafbilgiislem.workers.dev/"; // Worker URL
+const apiKey = "SVG_SECRET_12345";                     // Worker API Key
+const svgRawURL = "https://raw.githubusercontent.com/tafbilgiislem/ypm/main/slayt.svg"; // SVG dosya URL
 
-// SVG yükleme (cache bypass)
+// SVG yükleme (cache bypass + input senkronizasyon)
 async function loadSVG() {
   try {
     const res = await fetch(svgRawURL + "?t=" + Date.now());
     const text = await res.text();
     document.getElementById("svg-container").innerHTML = text;
 
-    // Input alanlarını SVG ile senkronize et
     const svg = document.querySelector("#svg-container svg");
     if (svg) {
       const title = svg.getElementById("title");
@@ -54,7 +77,7 @@ async function loadSVG() {
   }
 }
 
-// Sayfa açıldığında yükle
+// Sayfa açılır açılmaz yükle
 loadSVG();
 
 // Preview fonksiyonu
@@ -67,7 +90,7 @@ function preview() {
   if (subtitle) subtitle.textContent = document.getElementById("subtitleInput").value;
 }
 
-// Save fonksiyonu
+// Save fonksiyonu (Worker üzerinden commit + otomatik reload)
 async function save() {
   const svg = document.querySelector("#svg-container svg");
   if (!svg) { alert("SVG bulunamadı"); return; }
@@ -85,8 +108,8 @@ async function save() {
     const text = await res.text();
     alert(text);
 
-    // Commit sonrası reload
-    setTimeout(() => { loadSVG(); }, 1500);
+    // Commit sonrası 0.5 sn sonra reload → hemen görüntü
+    setTimeout(() => { loadSVG(); }, 500);
 
   } catch (err) {
     console.error("Fetch hata:", err);
