@@ -69,23 +69,30 @@ async function loadSVG() {
   try {
     const res = await fetch(svgRawURL + "?t=" + Date.now());
     const text = await res.text();
-    document.getElementById("svg-container").innerHTML = text;
 
-    const svg = document.querySelector("#svg-container svg");
-    if (svg) {
-      // inputları senkronize et
-      const title = svg.getElementById("title");       // SVG text id
-      const subtitle = svg.getElementById("subtitle"); // SVG text id
-      if (title) document.getElementById("titleInput").value = title.textContent;
-      if (subtitle) document.getElementById("subtitleInput").value = subtitle.textContent;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "image/svg+xml");
+    const svgNode = doc.querySelector("svg");
 
-      // SVG görünürlük ve oran ayarı
-      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-      svg.setAttribute("width", "100%");
-      svg.setAttribute("height", "100%");
-    }
+    if (!svgNode) { alert("SVG yüklenemedi!"); return; }
 
-    console.log("SVG yüklendi");
+    // inputları senkronize et
+    const title = svgNode.getElementById("title");
+    const subtitle = svgNode.getElementById("subtitle");
+    if (title) document.getElementById("titleInput").value = title.textContent;
+    if (subtitle) document.getElementById("subtitleInput").value = subtitle.textContent;
+
+    // SVG görünürlük ve boyut ayarı
+    svgNode.setAttribute("width", "100%");
+    svgNode.setAttribute("height", "100%");
+    svgNode.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+    const container = document.getElementById("svg-container");
+    container.innerHTML = "";
+    container.appendChild(svgNode);
+
+    console.log("SVG yüklendi ve hazır");
+
   } catch (err) {
     console.error("SVG yüklenemedi:", err);
   }
@@ -99,7 +106,6 @@ function preview() {
   const svg = document.querySelector("#svg-container svg");
   if (!svg) { alert("SVG bulunamadı"); return; }
 
-  // SVG text id’leri ile eşleşmeli
   const title = svg.getElementById("title");
   const subtitle = svg.getElementById("subtitle");
 
@@ -127,14 +133,26 @@ async function save() {
     const text = await res.text();
     alert(text);
 
-    // Kaydetme sonrası DOM’u güncelle → input ve SVG aynı kalır
-    const title = svg.getElementById("title");
-    const subtitle = svg.getElementById("subtitle");
+    // Worker’dan gelen SVG'yi parse edip boyutu koru
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(updatedSVG, "image/svg+xml");
+    const svgNode = doc.querySelector("svg");
+    svgNode.setAttribute("width", "100%");
+    svgNode.setAttribute("height", "100%");
+    svgNode.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+    const container = document.getElementById("svg-container");
+    container.innerHTML = "";
+    container.appendChild(svgNode);
+
+    // Inputları tekrar senkronize et
+    const title = svgNode.getElementById("title");
+    const subtitle = svgNode.getElementById("subtitle");
     if (title) title.textContent = document.getElementById("titleInput").value;
     if (subtitle) subtitle.textContent = document.getElementById("subtitleInput").value;
 
   } catch (err) {
-    console.error("Fetch hata:", err);
+    console.error("Fetch hatası:", err);
     alert("Fetch hatası, console'a bak!");
   }
 }
