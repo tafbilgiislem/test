@@ -2,22 +2,27 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>SVG Live Editor - YPM</title>
+<title>SVG Live Editor 1920x1080 - YPM</title>
 <style>
   body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
-  
+
+  /* Responsive 16:9 container */
   #svg-container {
-    border: 1px solid #ccc;
+    position: relative;
     width: 100%;
-    max-width: 800px;
-    min-height: 400px; /* daha yüksek, preview tam görünür */
+    max-width: 1920px;
     margin-bottom: 20px;
-    overflow: visible; /* SVG taşmasına izin ver */
+    padding-top: 56.25%; /* 1080 / 1920 = 0.5625 */
+    border: 1px solid #ccc;
+    overflow: visible;
   }
 
   #svg-container svg {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: auto; /* orantıyı korur */
+    height: 100%;
     display: block;
   }
 
@@ -35,15 +40,15 @@
     padding: 5px 10px;
   }
 
-  @media (max-width: 500px) {
-    #svg-container { min-height: 250px; }
+  @media (max-width: 800px) {
+    #svg-container { padding-top: 56.25%; }
     input { width: 100%; max-width: 100%; }
   }
 </style>
 </head>
 <body>
 
-<h2>SVG Live Editor - YPM</h2>
+<h2>SVG Live Editor - 1920x1080 YPM</h2>
 
 <div id="svg-container"></div>
 
@@ -54,7 +59,7 @@
 <button onclick="save()">Kaydet</button>
 
 <script>
-// Ayarlar
+// Worker ve SVG ayarları
 const workerURL = "https://githubtoken.tafbilgiislem.workers.dev/"; // Worker URL
 const apiKey = "SVG_SECRET_12345";                     // Worker API Key
 const svgRawURL = "https://tafbilgiislem.github.io/ypm/slayt.svg"; // SVG dosya URL
@@ -74,10 +79,10 @@ async function loadSVG() {
       if (title) document.getElementById("titleInput").value = title.textContent;
       if (subtitle) document.getElementById("subtitleInput").value = subtitle.textContent;
 
-      // SVG için görünürlük ve oran ayarı
-      svg.setAttribute("width", "100%");
-      svg.setAttribute("height", "auto");
+      // SVG görünürlük ve oran ayarı
       svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+      svg.setAttribute("width", "100%");
+      svg.setAttribute("height", "100%");
     }
 
     console.log("SVG yüklendi");
@@ -86,7 +91,7 @@ async function loadSVG() {
   }
 }
 
-// Sayfa açıldığında SVG yükle
+// Sayfa açıldığında yükle
 loadSVG();
 
 // Önizleme fonksiyonu
