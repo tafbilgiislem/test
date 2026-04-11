@@ -3,27 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SVG Pro Editor | Inkscape Style Corners</title>
+    <title>SVG Pro Editor | Kusursuz Inkscape Modu</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Montserrat:wght@800&family=Poppins:wght@700&display=swap" rel="stylesheet">
     <style>
         :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --handle-move: #3b82f6; --handle-rotate: #f59e0b; --handle-radius: #ec4899; }
         
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        /* Kusursuz Yerleşim */
-        html, body { margin: 0; padding: 0; width: 100%; height: 100dvh; overflow: hidden; background: var(--bg); color: white; font-family: 'Inter', sans-serif; overscroll-behavior-y: none; }
+        /* Kusursuz Mobil Scroll Yerleşimi */
+        html, body { margin: 0; padding: 0; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; background: var(--bg); color: white; font-family: 'Inter', sans-serif; overscroll-behavior-y: none; }
 
-        /* Giriş Paneli */
         #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 10000; }
         .login-card { background: var(--panel); padding: 40px; border-radius: 20px; width: 340px; text-align: center; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .login-card input { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 10px; border: 1px solid var(--border); background: #000; color: #fff; text-align: center; font-size: 16px; outline: none; }
         .login-card button { width: 100%; padding: 14px; background: var(--accent); border: none; color: white; font-weight: bold; border-radius: 10px; cursor: pointer; transition: 0.2s; }
         .login-card button:hover { opacity: 0.9; }
 
-        /* Ana Konteynır */
         #app-container { display: none; height: 100%; width: 100%; flex-direction: row; }
         
-        /* PC & Mobil Yerleşim */
         #sidebar { width: 360px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; height: 100%; z-index: 100; }
         #main-view { flex: 1; background: #020617; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 15px; position: relative; height: 100%; touch-action: none; }
 
@@ -34,16 +31,12 @@
         }
         
         .sidebar-nav { padding: 15px; background: #111827; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-        
-        /* Scroll Edilebilir Editör Paneli */
         #editor-fields { flex: 1; min-height: 0; overflow-y: auto; padding: 15px; background: rgba(0,0,0,0.2); padding-bottom: 80px; touch-action: pan-y; }
 
-        /* Çizim Alanı */
         #svg-wrapper { position: relative; background: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 50px black; touch-action: none; }
         #canvas-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
         #canvas-inner svg { width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; overflow: visible; }
 
-        /* Tutamaçlar ve Etkileşim */
         .duzenlenebilir { cursor: move; pointer-events: all; }
         #control-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; overflow: visible; }
         
@@ -51,9 +44,8 @@
         .handle:hover { transform: scale(1.3); }
         .handle-resize { stroke: var(--handle-move); cursor: nwse-resize; }
         .handle-rotate { stroke: var(--handle-rotate); cursor: crosshair; fill: var(--handle-rotate); }
-        .handle-radius { stroke: var(--handle-radius); cursor: ns-resize; fill: var(--handle-radius); }
+        .handle-radius { stroke: var(--handle-radius); cursor: ns-resize; fill: var(--handle-radius); } /* Yukarı aşağı hareket eder */
 
-        /* Arayüz Öğeleri */
         .field-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; border-left: 4px solid transparent; transition: 0.3s; }
         .field-box.active { border-left-color: var(--accent); background: rgba(16, 185, 129, 0.05); }
         .delete-btn { position: absolute; right: 12px; top: 12px; color: #ef4444; cursor: pointer; font-weight: bold; font-size: 20px; }
@@ -107,13 +99,11 @@
 </div>
 
 <script>
-    // === DEĞİŞKENLER VE GITHUB/WORKER URL ===
-    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev"; // GITHUB LİNKİNİZ
+    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev"; // GITHUB LİNKİNİZİ GÜNCELLEYİN
     let SHA_KEY = "", SESSION_PASS = "";
     let selectedEl = null, resizingEl = null, rotatingEl = null, radiusingEl = null, activeHandle = null;
     let offset = {x:0, y:0}, startP = {x:0, y:0}, startData = {};
 
-    // Global UI Tetikleyici
     window.updateEditorUI = null;
 
     // === GİRİŞ ===
@@ -148,41 +138,12 @@
         } catch(e) { alert("Bağlantı Hatası!"); st.style.display="none"; }
     }
 
-    // === INKSCAPE BEZIER ALGORİTMASI ===
-    function describeRoundedRect(r, s, x, y, w, h) {
-        if (r <= 0) return `M ${x} ${y} H ${x + w} V ${y + h} H ${x} Z`;
-        r = Math.min(r, w / 2, h / 2); // Radius genişliğin yarısını geçemez
-        
-        const angle = Math.PI / 4;
-        const handleLength = r * (1 - s); // Smoothing oranı
-        const kappa = (4 * handleLength * Math.tan(angle)) / 3;
-
-        const pts = [
-            [x + r, y], [x + w - r, y],
-            [x + w, y + r], [x + w, y + h - r],
-            [x + w - r, y + h], [x + r, y + h],
-            [x, y + h - r], [x, y + r]
-        ];
-
-        return `M ${pts[0][0]} ${pts[0][1]} 
-                L ${pts[1][0]} ${pts[1][1]} 
-                C ${pts[1][0] + kappa} ${pts[1][1]} ${pts[2][0]} ${pts[2][1] - kappa} ${pts[2][0]} ${pts[2][1]} 
-                L ${pts[3][0]} ${pts[3][1]} 
-                C ${pts[3][0]} ${pts[3][1] + kappa} ${pts[4][0] + kappa} ${pts[4][1]} ${pts[4][0]} ${pts[4][1]} 
-                L ${pts[5][0]} ${pts[5][1]} 
-                C ${pts[5][0] - kappa} ${pts[5][1]} ${pts[6][0]} ${pts[6][1] + kappa} ${pts[6][0]} ${pts[6][1]} 
-                L ${pts[7][0]} ${pts[7][1]} 
-                C ${pts[7][0]} ${pts[7][1] - kappa} ${pts[0][0] - kappa} ${pts[0][1]} ${pts[0][0]} ${pts[0][1]} 
-                Z`;
-    }
-
-    // Gerçek SVG Clip-Path Uygulayıcı
-    window.applySquircle = function(el) {
+    // === INKSCAPE NATIVE RADIUS ALGORİTMASI ===
+    // Resmin tamamını kusursuz yuvarlatmak için CSS yerine %100 SVG <clipPath> rect rx kullanıyoruz.
+    window.applyNativeRadius = function(el) {
         if (el.tagName !== 'image') return;
         let rx = parseFloat(el.dataset.rx) || 0;
-        let s = parseFloat(el.dataset.smoothing);
-        if (isNaN(s)) s = 0.5; // Varsayılan Apple Squircle yumuşatması
-
+        
         const x = parseFloat(el.getAttribute('x')) || 0;
         const y = parseFloat(el.getAttribute('y')) || 0;
         const w = parseFloat(el.getAttribute('width')) || 0;
@@ -194,17 +155,23 @@
 
         const clipId = "clip_" + el.id;
         let clipPath = defs.querySelector("#" + clipId);
+        
         if (!clipPath) {
             clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
             clipPath.id = clipId;
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            clipPath.appendChild(path);
+            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            clipPath.appendChild(rect);
             defs.appendChild(clipPath);
             el.setAttribute("clip-path", `url(#${clipId})`);
         }
 
-        const pathEl = clipPath.querySelector('path');
-        pathEl.setAttribute("d", describeRoundedRect(rx, s, x, y, w, h));
+        const rectEl = clipPath.querySelector('rect');
+        rectEl.setAttribute("x", x);
+        rectEl.setAttribute("y", y);
+        rectEl.setAttribute("width", w);
+        rectEl.setAttribute("height", h);
+        rectEl.setAttribute("rx", rx); // Kusursuz köşe yuvarlama
+        rectEl.setAttribute("ry", rx);
     };
 
     function setupLayers() {
@@ -218,15 +185,15 @@
         
         mainSvg.querySelectorAll('.duzenlenebilir').forEach(el => {
             if(!el.id) el.id = "el_" + Math.random().toString(36).substr(2,9);
-            // Yüklemede eski radiusları uygula
-            if(el.tagName === 'image') window.applySquircle(el);
+            // Varsa eski radiusları tam olarak uygula
+            if(el.tagName === 'image') window.applyNativeRadius(el);
         });
 
         initEngine(mainSvg);
         renderFields();
     }
 
-    // === PRO EDİTÖR MOTORU (Mouse & Dokunmatik) ===
+    // === PRO EDİTÖR MOTORU ===
     function initEngine(svg) {
         const wrapper = document.getElementById('svg-wrapper');
         const ctrl = document.getElementById('control-layer');
@@ -244,7 +211,7 @@
             const p = getCoords(e);
             const target = e.target;
 
-            // Tutamaç Tıklaması
+            // 1. Tutamaçlara Tıklanırsa
             if (target.classList.contains('handle')) {
                 const el = document.getElementById(target.dataset.id);
                 if (!el) return;
@@ -267,7 +234,7 @@
                 e.preventDefault(); e.stopPropagation(); return;
             }
 
-            // Nesne Tıklaması
+            // 2. Nesnenin Kendisine Tıklanırsa
             const el = target.closest('.duzenlenebilir');
             if (el) {
                 selectedEl = el;
@@ -293,7 +260,7 @@
             const dy = p.y - startP.y;
 
             if (resizingEl) {
-                // Boyutlandırma
+                // 4 KÖŞE BOYUTLANDIRMA
                 let { x, y, w, h } = startData;
                 if (activeHandle === 'br') { w += dx; h += dy; }
                 else if (activeHandle === 'bl') { x += dx; w -= dx; h += dy; }
@@ -304,7 +271,7 @@
                     if (w > 10 && h > 10) {
                         resizingEl.setAttribute("x", x); resizingEl.setAttribute("y", y);
                         resizingEl.setAttribute("width", w); resizingEl.setAttribute("height", h);
-                        window.applySquircle(resizingEl); // Boyut değişince köşeyi güncelle
+                        window.applyNativeRadius(resizingEl); // Boyut değiştikçe maske de güncellenir
                     }
                 } else {
                     const ns = Math.max(5, startData.fontSize + dx/2);
@@ -313,7 +280,7 @@
                 updateUI(resizingEl); syncSliders(resizingEl);
             } 
             else if (rotatingEl) {
-                // Döndürme
+                // DÖNDÜRME
                 const bbox = rotatingEl.getBBox();
                 const cx = bbox.x + bbox.width / 2;
                 const cy = bbox.y + bbox.height / 2;
@@ -322,17 +289,18 @@
                 updateUI(rotatingEl);
             }
             else if (radiusingEl && radiusingEl.tagName === "image") {
-                // Inkscape Tarzı Köşe Yumuşatma (Aşağı çekince artar)
+                // INKSCAPE KÖŞE YUMUŞATMA (Aşağı Çektikçe Daireye Dönüşür)
+                // Maksimum radius değerini genişliğin veya yüksekliğin yarısına limitliyoruz ki kusursuz daire olsun.
                 const newRx = Math.max(0, Math.min(startData.w/2, startData.h/2, startData.rx + dy));
                 radiusingEl.dataset.rx = newRx;
-                window.applySquircle(radiusingEl);
+                window.applyNativeRadius(radiusingEl);
                 updateUI(radiusingEl); syncSliders(radiusingEl);
             }
             else if (selectedEl) {
-                // Taşıma
+                // TAŞIMA
                 selectedEl.setAttribute("x", p.x - offset.x);
                 selectedEl.setAttribute("y", p.y - offset.y);
-                if(selectedEl.tagName === 'image') window.applySquircle(selectedEl);
+                if(selectedEl.tagName === 'image') window.applyNativeRadius(selectedEl);
                 updateUI(selectedEl);
             }
         };
@@ -344,7 +312,7 @@
         window.onpointerup = release;
         window.onpointercancel = release;
 
-        // UI Çizici
+        // === SEÇİM KUTUSU (Seçim kutusu da yuvarlanır!) ===
         function updateUI(el) {
             ctrl.innerHTML = "";
             const b = el.getBBox();
@@ -354,15 +322,19 @@
             g.setAttribute("transform", transform);
             ctrl.appendChild(g);
 
+            // Mavi Çerçeve
             const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
             r.setAttribute("x", b.x); r.setAttribute("y", b.y);
             r.setAttribute("width", b.width); r.setAttribute("height", b.height);
+            // ÖNEMLİ: Çerçeve de resimle aynı açıda yuvarlanır!
+            const currentRx = el.tagName === 'image' ? (parseFloat(el.dataset.rx) || 0) : 0;
+            r.setAttribute("rx", currentRx); r.setAttribute("ry", currentRx);
             r.setAttribute("fill", "none"); r.setAttribute("stroke", "var(--handle-move)"); r.setAttribute("stroke-width", "2"); r.setAttribute("stroke-dasharray", "6,4");
             g.appendChild(r);
 
             const s = 24; 
 
-            // 4 Köşe Resize
+            // 4 Köşe
             const corners = [
                 { id: 'tl', x: b.x, y: b.y, cur: 'nwse-resize' }, 
                 { id: 'tr', x: b.x + b.width, y: b.y, cur: 'nesw-resize' },
@@ -379,7 +351,7 @@
             });
 
             if (el.tagName === "image") {
-                // Döndürme Tutamacı (Turuncu Daire)
+                // Döndürme Noktası
                 const rotY = b.y - 40;
                 const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 line.setAttribute("x1", b.x + b.width / 2); line.setAttribute("y1", b.y);
@@ -389,23 +361,24 @@
 
                 const rotH = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 rotH.setAttribute("cx", b.x + b.width / 2); rotH.setAttribute("cy", rotY);
-                rotH.setAttribute("r", s/2);
+                rotH.setAttribute("r", s/2.5);
                 rotH.setAttribute("class", "handle handle-rotate"); rotH.dataset.id = el.id;
                 g.appendChild(rotH);
 
-                // Inkscape Köşe Yumuşatma Tutamacı (Pembe Daire - Sağ Üstte, aşağı kayar)
-                const currentRx = parseFloat(el.dataset.rx) || 0;
+                // KÖŞE YUMUŞATMA (INKSCAPE RADIUS HANDLE)
+                // Sağ üst köşeden başlar, rx değeri arttıkça aşağı kayar
                 const radH = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                radH.setAttribute("cx", b.x + b.width - s/2); 
-                radH.setAttribute("cy", b.y + currentRx + s/2); // Radius arttıkça aşağı iner
+                radH.setAttribute("cx", b.x + b.width); 
+                radH.setAttribute("cy", b.y + currentRx); // Aşağı hareket eder
                 radH.setAttribute("r", s/2.5);
                 radH.setAttribute("class", "handle handle-radius"); radH.dataset.id = el.id;
                 g.appendChild(radH);
             }
         }
-        window.updateEditorUI = updateUI; // Global erişim
+        window.updateEditorUI = updateUI; 
     }
 
+    // === SENKRONİZASYON ===
     function syncSliders(el) {
         const i = Array.from(document.querySelectorAll('.duzenlenebilir')).indexOf(el);
         if (i === -1) return;
@@ -419,15 +392,12 @@
             const w = Math.round(parseFloat(el.getAttribute("width")));
             const h = Math.round(parseFloat(el.getAttribute("height")));
             const rx = Math.round(parseFloat(el.dataset.rx) || 0); 
-            const sm = parseFloat(el.dataset.smoothing) || 0.5;
             
-            const ws = document.getElementById(`w-slider-${i}`), hs = document.getElementById(`h-slider-${i}`);
-            const rs = document.getElementById(`r-slider-${i}`), ss = document.getElementById(`s-slider-${i}`);
+            const ws = document.getElementById(`w-slider-${i}`), hs = document.getElementById(`h-slider-${i}`), rs = document.getElementById(`r-slider-${i}`);
             
             if(ws) { ws.value = w; document.getElementById(`val-w-${i}`).innerText = w + "px"; }
             if(hs) { hs.value = h; document.getElementById(`val-h-${i}`).innerText = h + "px"; }
             if(rs) { rs.value = rx; rs.max = Math.min(w/2, h/2); document.getElementById(`val-r-${i}`).innerText = rx + "px"; }
-            if(ss) { ss.value = sm; document.getElementById(`val-s-${i}`).innerText = sm.toFixed(2); }
         }
     }
 
@@ -453,18 +423,14 @@
                 `;
             } else {
                 const w = parseFloat(el.getAttribute("width")) || 200, h = parseFloat(el.getAttribute("height")) || 200;
-                const rx = parseFloat(el.dataset.rx) || 0, sm = parseFloat(el.dataset.smoothing) || 0.5; 
+                const rx = parseFloat(el.dataset.rx) || 0; 
                 html += `
                     <div class="label-row"><span class="label-text">GENİŞLİK</span><span class="value-badge" id="val-w-${i}">${Math.round(w)}px</span></div>
-                    <input type="range" id="w-slider-${i}" min="10" max="3000" value="${w}" oninput="const img=document.getElementById('${el.id}'); img.setAttribute('width', this.value); window.applySquircle(img); document.getElementById('val-w-${i}').innerText=Math.round(this.value)+'px'; if(window.updateEditorUI) window.updateEditorUI(img);">
+                    <input type="range" id="w-slider-${i}" min="10" max="3000" value="${w}" oninput="const img=document.getElementById('${el.id}'); img.setAttribute('width', this.value); window.applyNativeRadius(img); document.getElementById('val-w-${i}').innerText=Math.round(this.value)+'px'; if(window.updateEditorUI) window.updateEditorUI(img);">
                     <div class="label-row"><span class="label-text">YÜKSEKLİK</span><span class="value-badge" id="val-h-${i}">${Math.round(h)}px</span></div>
-                    <input type="range" id="h-slider-${i}" min="10" max="3000" value="${h}" oninput="const img=document.getElementById('${el.id}'); img.setAttribute('height', this.value); window.applySquircle(img); document.getElementById('val-h-${i}').innerText=Math.round(this.value)+'px'; if(window.updateEditorUI) window.updateEditorUI(img);">
-                    
+                    <input type="range" id="h-slider-${i}" min="10" max="3000" value="${h}" oninput="const img=document.getElementById('${el.id}'); img.setAttribute('height', this.value); window.applyNativeRadius(img); document.getElementById('val-h-${i}').innerText=Math.round(this.value)+'px'; if(window.updateEditorUI) window.updateEditorUI(img);">
                     <div class="label-row"><span class="label-text">KÖŞE YARIÇAPI</span><span class="value-badge" id="val-r-${i}">${Math.round(rx)}px</span></div>
-                    <input type="range" id="r-slider-${i}" min="0" max="${Math.min(w/2, h/2)}" value="${rx}" oninput="const img=document.getElementById('${el.id}'); img.dataset.rx=this.value; window.applySquircle(img); document.getElementById('val-r-${i}').innerText=Math.round(this.value)+'px'; if(window.updateEditorUI) window.updateEditorUI(img);">
-                    
-                    <div class="label-row"><span class="label-text">SQUIRCLE EFEKTİ</span><span class="value-badge" id="val-s-${i}">${sm.toFixed(2)}</span></div>
-                    <input type="range" id="s-slider-${i}" min="0" max="1" step="0.01" value="${sm}" oninput="const img=document.getElementById('${el.id}'); img.dataset.smoothing=this.value; window.applySquircle(img); document.getElementById('val-s-${i}').innerText=parseFloat(this.value).toFixed(2);">
+                    <input type="range" id="r-slider-${i}" min="0" max="${Math.min(w/2, h/2)}" value="${rx}" oninput="const img=document.getElementById('${el.id}'); img.dataset.rx=this.value; window.applyNativeRadius(img); document.getElementById('val-r-${i}').innerText=Math.round(this.value)+'px'; if(window.updateEditorUI) window.updateEditorUI(img);">
                 `;
             }
             b.innerHTML = html; f.appendChild(b);
@@ -477,7 +443,7 @@
         return c.startsWith('#') && c.length === 7 ? c : "#ffffff";
     }
 
-    // === YENİ ÖĞE VE KAYIT ===
+    // === EKLE & KAYDET ===
     document.getElementById('saveBtn').onclick = saveData;
     document.getElementById('addTextBtn').onclick = addNewText;
     document.getElementById('addImgBtn').onclick = () => document.getElementById('img-in').click();
@@ -501,7 +467,7 @@
             img.id = "i" + Date.now(); img.setAttribute("class", "duzenlenebilir");
             img.setAttribute("x", 100); img.setAttribute("y", 100);
             img.setAttribute("width", 300); img.setAttribute("height", 300);
-            img.dataset.rx = "0"; img.dataset.smoothing = "0.5";
+            img.dataset.rx = "0"; 
             img.setAttributeNS("http://www.w3.org/1999/xlink", "href", e.target.result);
             svg.appendChild(img); renderFields(); setupLayers();
         };
@@ -518,7 +484,7 @@
             await fetch(WORKER_URL, {
                 method: "PUT",
                 headers: {"X-Auth-Key": SESSION_PASS, "X-File-Name": document.getElementById('file-selector').value},
-                body: JSON.stringify({message: "Sync Bezier Final", content: b64, sha: SHA_KEY})
+                body: JSON.stringify({message: "Sync Inkscape Final", content: b64, sha: SHA_KEY})
             });
             st.innerText = "BAŞARIYLA KAYDEDİLDİ!";
             setTimeout(() => st.style.display="none", 2000);
