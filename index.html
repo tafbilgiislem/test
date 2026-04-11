@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SVG Pro Editor | Gelişmiş Köşe Araçları</title>
+    <title>SVG Pro Editor | Metin & Köşe Düzeltmesi</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Montserrat:wght@800&family=Poppins:wght@700&display=swap" rel="stylesheet">
     <style>
         :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --handle-move: #3b82f6; --handle-rotate: #f59e0b; --handle-radius: #ec4899; }
@@ -99,7 +99,7 @@
 </div>
 
 <script>
-    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev"; // Lütfen GITHUB/WORKER URL'nizi girin.
+    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev"; // Lütfen GITHUB/WORKER URL'nizi buraya yapıştırın.
     let SHA_KEY = "", SESSION_PASS = "";
     let selectedEl = null, resizingEl = null, rotatingEl = null, radiusingEl = null, activeHandle = null;
     let offset = {x:0, y:0}, startP = {x:0, y:0}, startData = {};
@@ -138,11 +138,10 @@
         } catch(e) { alert("Bağlantı Hatası!"); st.style.display="none"; }
     }
 
-    // === SENİN İSTEDİĞİN ÖZEL INKSCAPE BEZIER ALGORİTMASI ===
+    // === INKSCAPE BEZIER ALGORİTMASI ===
     function describeRoundedRect(r, s, x, y, w, h) {
         if (r <= 0) return `M ${x} ${y} H ${x + w} V ${y + h} H ${x} Z`;
         r = Math.min(r, w / 2, h / 2); 
-        
         const angle = Math.PI / 4; 
         const handleLength = r * (1 - s); 
         const kappa = (4 * handleLength * Math.tan(angle)) / 3; 
@@ -247,7 +246,7 @@
                     h: parseFloat(el.getAttribute("height")) || 0,
                     rx: parseFloat(el.dataset.rx) || 0,
                     sm: parseFloat(el.dataset.smoothing) || 0.5,
-                    fontSize: parseFloat(window.getComputedStyle(el).fontSize) || 40
+                    fontSize: parseFloat(el.getAttribute("font-size")) || parseFloat(window.getComputedStyle(el).fontSize) || 60
                 };
 
                 if (target.classList.contains('handle-resize')) { resizingEl = el; activeHandle = target.dataset.handle; }
@@ -297,7 +296,8 @@
                     }
                 } else {
                     const ns = Math.max(5, startData.fontSize + dx/2);
-                    resizingEl.style.fontSize = ns + "px"; resizingEl.setAttribute("font-size", ns);
+                    resizingEl.style.fontSize = ns + "px"; 
+                    resizingEl.setAttribute("font-size", ns); // Garanti Kayıt Özelliği
                 }
                 updateUI(resizingEl); syncSliders(resizingEl);
             } 
@@ -330,7 +330,7 @@
         window.onpointerup = release;
         window.onpointercancel = release;
 
-        // === PROFESYONEL ÇERÇEVE ÇİZİMİ ===
+        // === SEÇİM KUTUSU ÇİZİMİ ===
         function updateUI(el) {
             ctrl.innerHTML = "";
             const b = el.getBBox();
@@ -340,7 +340,7 @@
             g.setAttribute("transform", transform);
             ctrl.appendChild(g);
 
-            // ÖNEMLİ: Çerçeve de artık resim gibi tam Bezier Eğrisi kullanılarak çiziliyor!
+            // Çerçeve (Resimse Bezier, Metinse Kare)
             if (el.tagName === 'image') {
                 const rPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 const currentRx = parseFloat(el.dataset.rx) || 0;
@@ -362,6 +362,7 @@
 
             const s = 24; 
 
+            // 4 Köşe
             const corners = [
                 { id: 'tl', x: b.x, y: b.y, cur: 'nwse-resize' }, 
                 { id: 'tr', x: b.x + b.width, y: b.y, cur: 'nesw-resize' },
@@ -378,6 +379,7 @@
             });
 
             if (el.tagName === "image") {
+                // Döndürme Tutamacı
                 const rotY = b.y - 40;
                 const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 line.setAttribute("x1", b.x + b.width / 2); line.setAttribute("y1", b.y);
@@ -391,7 +393,7 @@
                 rotH.setAttribute("class", "handle handle-rotate"); rotH.dataset.id = el.id;
                 g.appendChild(rotH);
 
-                // Köşe Yumuşatma Tutamacı
+                // Köşe Yumuşatma Tutamacı (Aşağı hareket eder)
                 const currentRx = parseFloat(el.dataset.rx) || 0;
                 const radH = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 radH.setAttribute("cx", b.x + b.width); 
@@ -404,12 +406,12 @@
         window.updateEditorUI = updateUI; 
     }
 
-    // === SİDEBAR SENKRONİZASYONU VE ARAYÜZÜ ===
+    // === SİDEBAR ===
     function syncSliders(el) {
         const i = Array.from(document.querySelectorAll('.duzenlenebilir')).indexOf(el);
         if (i === -1) return;
         if (el.tagName === 'text') {
-            const fs = parseInt(window.getComputedStyle(el).fontSize);
+            const fs = parseFloat(el.getAttribute("font-size")) || parseInt(window.getComputedStyle(el).fontSize) || 60;
             const slider = document.getElementById(`fs-slider-${i}`);
             if(slider) slider.value = fs;
             const badge = document.getElementById(`val-fs-${i}`);
@@ -438,11 +440,11 @@
             b.className = 'field-box'; b.id = 'box-' + el.id;
             const col = el.getAttribute('fill') || el.style.fill || "#ffffff";
             
-            let html = `<span class="delete-btn" onclick="if(confirm('Sil?')){ document.getElementById('${el.id}').remove(); renderFields(); document.getElementById('control-layer').innerHTML=''; }">×</span>`;
+            let html = `<span class="delete-btn" onclick="if(confirm('Silinecek?')){ document.getElementById('${el.id}').remove(); renderFields(); document.getElementById('control-layer').innerHTML=''; }">×</span>`;
             html += `<div style="font-size:11px; color:#3b82f6; font-weight:bold; letter-spacing:0.5px;">${el.tagName.toUpperCase()} #${i+1}</div>`;
 
             if (el.tagName === 'text') {
-                const fs = parseInt(window.getComputedStyle(el).fontSize) || 40;
+                const fs = parseFloat(el.getAttribute("font-size")) || parseInt(window.getComputedStyle(el).fontSize) || 60;
                 html += `
                     <input type="text" value="${el.textContent}" oninput="document.getElementById('${el.id}').textContent=this.value" style="width:100%; padding:12px; background:#000; color:#fff; border:1px solid #444; border-radius:8px; margin-top:8px;">
                     <div class="label-row"><span class="label-text">YAZI BOYUTU</span><span class="value-badge" id="val-fs-${i}">${fs}px</span></div>
@@ -479,19 +481,34 @@
         return c.startsWith('#') && c.length === 7 ? c : "#ffffff";
     }
 
-    // === YENİ ÖĞELER VE KAYIT ===
+    // === METİN VE RESİM EKLEME ===
     document.getElementById('saveBtn').onclick = saveData;
     document.getElementById('addTextBtn').onclick = addNewText;
     document.getElementById('addImgBtn').onclick = () => document.getElementById('img-in').click();
     document.getElementById('img-in').onchange = (e) => addNewImage(e.target);
 
+    // KESİN ÇÖZÜM: Metinler artık BEYAZ ve tam ORTADA, kaybolmasını engelleyen attributelar ile eklendi
     function addNewText() {
         const svg = document.querySelector('#canvas-inner svg');
+        if(!svg) return;
+        const viewBox = svg.viewBox.baseVal;
+        const cx = viewBox.width ? viewBox.width / 2 : 500;
+        const cy = viewBox.height ? viewBox.height / 2 : 500;
+
         const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        t.id = "t" + Date.now(); t.setAttribute("class", "duzenlenebilir");
-        t.setAttribute("x", 200); t.setAttribute("y", 200); t.setAttribute("fill", "#000000");
-        t.style.fontSize = "60px"; t.style.fontFamily = "sans-serif"; t.textContent = "YENİ METİN";
-        svg.appendChild(t); renderFields(); setupLayers();
+        t.id = "txt_" + Date.now(); 
+        t.setAttribute("class", "duzenlenebilir");
+        t.setAttribute("x", cx); 
+        t.setAttribute("y", cy); 
+        t.setAttribute("fill", "#ffffff"); // Koyuda kaybolmasın diye beyaz
+        t.setAttribute("font-size", "80"); // Özellik garantisi
+        t.style.fontSize = "80px"; 
+        t.style.fontFamily = "sans-serif"; 
+        t.textContent = "YENİ METİN";
+        
+        svg.appendChild(t); 
+        renderFields(); 
+        setupLayers();
     }
 
     function addNewImage(input) {
@@ -499,12 +516,17 @@
         const reader = new FileReader();
         reader.onload = (e) => {
             const svg = document.querySelector('#canvas-inner svg');
+            const viewBox = svg.viewBox.baseVal;
+            const cx = viewBox.width ? (viewBox.width / 2) - 150 : 100;
+            const cy = viewBox.height ? (viewBox.height / 2) - 150 : 100;
+            
             const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
-            img.id = "i" + Date.now(); img.setAttribute("class", "duzenlenebilir");
-            img.setAttribute("x", 100); img.setAttribute("y", 100);
+            img.id = "img_" + Date.now(); img.setAttribute("class", "duzenlenebilir");
+            img.setAttribute("x", cx); img.setAttribute("y", cy);
             img.setAttribute("width", 300); img.setAttribute("height", 300);
             img.dataset.rx = "0"; img.dataset.smoothing = "0.5";
             img.setAttributeNS("http://www.w3.org/1999/xlink", "href", e.target.result);
+            
             svg.appendChild(img); renderFields(); setupLayers();
         };
         reader.readAsDataURL(file);
@@ -514,13 +536,13 @@
         const st = document.getElementById('status-info');
         st.innerText = "KAYDEDİLİYOR..."; st.style.display = "block";
         try {
-            document.getElementById('control-layer').innerHTML = ""; 
+            document.getElementById('control-layer').innerHTML = ""; // Kayıttan önce kutuyu temizle
             const svgText = new XMLSerializer().serializeToString(document.querySelector('#canvas-inner svg'));
             const b64 = btoa(unescape(encodeURIComponent(svgText)));
             await fetch(WORKER_URL, {
                 method: "PUT",
                 headers: {"X-Auth-Key": SESSION_PASS, "X-File-Name": document.getElementById('file-selector').value},
-                body: JSON.stringify({message: "Sync Advanced Bezier", content: b64, sha: SHA_KEY})
+                body: JSON.stringify({message: "Pro Text & Bezier Fix", content: b64, sha: SHA_KEY})
             });
             st.innerText = "BAŞARIYLA KAYDEDİLDİ!";
             setTimeout(() => st.style.display="none", 2000);
