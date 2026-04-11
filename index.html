@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SVG Pro Editor | Akıllı Tanıma</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Montserrat:wght@800&family=Poppins:wght@700&family=Oswald:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <title>SVG Pro Editor | Köşeden Boyutlandırma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Montserrat:wght@800&family=Poppins:wght@700&family=Oswald:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --snap: #a855f7; --center-snap: #3b82f6; --add: #3b82f6; --img: #f97316; --error: #ef4444; }
+        :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --snap: #a855f7; --center-snap: #3b82f6; --handle: #ffffff; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
+        /* Giriş Ekranı */
         #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 10000; }
         .login-card { background: var(--panel); padding: 40px; border-radius: 16px; width: 90%; max-width: 380px; text-align: center; border: 1px solid var(--border); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
         .login-card input { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 10px; border: 1px solid var(--border); background: #0f172a; color: white; font-size: 16px; text-align: center; }
@@ -25,23 +26,22 @@
         .nav-row { display: flex; gap: 8px; margin-top: 8px; }
         #file-selector { width: 100%; padding: 10px; border-radius: 8px; background: #000; color: #fff; border: 1px solid var(--border); cursor: pointer; }
 
-        .btn-add-text { background: var(--add); color: white; border: none; border-radius: 8px; padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; flex: 1; }
-        .btn-add-img { background: var(--img); color: white; border: none; border-radius: 8px; padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; flex: 1; }
+        .btn-add-text { background: #3b82f6; color: white; border: none; border-radius: 8px; padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; flex: 1; }
+        .btn-add-img { background: #f97316; color: white; border: none; border-radius: 8px; padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; flex: 1; }
 
         #editor-fields { flex: 1; overflow-y: auto; padding: 15px; background: rgba(0,0,0,0.1); }
         .field-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; }
         .text-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #000; color: #fff; margin-bottom: 10px; font-size: 14px; }
         
-        /* Önemli: Editörün tanıdığı her şey sürüklenebilir olsun */
-        text, image, .duzenlenebilir { cursor: move; user-select: none; }
-
-        .control-grid { display: grid; grid-template-columns: 1fr 40px; gap: 10px; margin-bottom: 10px; }
-        .font-selector { width: 100%; padding: 8px; border-radius: 6px; background: #000; color: #fff; border: 1px solid var(--border); font-size: 13px; }
+        .duzenlenebilir { cursor: move; }
+        
+        /* Boyutlandırma Tutamaçları */
+        .resize-handle { fill: var(--handle); stroke: #3b82f6; stroke-width: 2; cursor: nwse-resize; pointer-events: all; }
 
         #save-btn { flex: 2; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .exit-btn { flex: 1; padding: 12px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; }
 
-        .delete-btn-ui { position: absolute; right: 10px; top: 10px; color: var(--error); cursor: pointer; font-size: 20px; font-weight: bold; opacity: 0.6; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border-radius: 50%; z-index: 5; }
+        .delete-btn-ui { position: absolute; right: 10px; top: 10px; color: #ef4444; cursor: pointer; font-size: 20px; font-weight: bold; opacity: 0.6; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border-radius: 50%; z-index: 5; }
 
         #main-view { flex: 1; background: #020617; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 20px; position: relative; }
         #svg-wrapper { background: white; box-shadow: 0 0 40px rgba(0,0,0,0.6); line-height: 0; position: relative; }
@@ -68,7 +68,7 @@
     <div id="main-view">
         <div id="svg-wrapper">
             <div id="canvas-inner"></div>
-            <svg id="guide-layer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></svg>
+            <svg id="control-layer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></svg>
         </div>
     </div>
     <div id="sidebar">
@@ -93,21 +93,13 @@
 </div>
 
 <script>
-    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev/"; // URL'nizi güncelleyin
+    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev/"; // Güncelleyin
     let SHA_KEY = "";
     let SESSION_PASS = "";
     let selectedElement = null;
+    let resizingElement = null;
     let offset = { x: 0, y: 0 };
     const SNAP_THRESHOLD = 8;
-
-    const fonts = [
-        { name: "Varsayılan", val: "inherit" },
-        { name: "Roboto", val: "'Roboto', sans-serif" },
-        { name: "Montserrat", val: "'Montserrat', sans-serif" },
-        { name: "Poppins", val: "'Poppins', sans-serif" },
-        { name: "Oswald", val: "'Oswald', sans-serif" },
-        { name: "Arial", val: "Arial, sans-serif" }
-    ];
 
     async function login() {
         const pass = document.getElementById('passInput').value.trim();
@@ -119,11 +111,9 @@
     async function loadSlide() {
         const fileName = document.getElementById('file-selector').value;
         const status = document.getElementById('status-info');
-        status.innerText = fileName.toUpperCase() + " YÜKLENİYOR...";
         status.style.display = "block";
         try {
             const res = await fetch(WORKER_URL, { headers: { "X-Auth-Key": SESSION_PASS, "X-File-Name": fileName } });
-            if (res.status === 401) { alert("Şifre Hatalı!"); status.style.display="none"; return; }
             const data = await res.json();
             SHA_KEY = data.sha;
             document.getElementById('login-screen').style.display = "none";
@@ -131,251 +121,179 @@
             document.getElementById('canvas-inner').innerHTML = decodeURIComponent(escape(atob(data.content)));
             
             const mainSvg = document.querySelector('#canvas-inner svg');
-            const guideLayer = document.getElementById('guide-layer');
-            guideLayer.setAttribute("viewBox", mainSvg.getAttribute("viewBox"));
-
-            // YÜKLENEN SVG İÇİNDEKİ TÜM METİN VE RESİMLERE SINIF EKLE (Otomatik Tanıma)
+            document.getElementById('control-layer').setAttribute("viewBox", mainSvg.getAttribute("viewBox"));
+            
             mainSvg.querySelectorAll('text, image').forEach(el => el.classList.add('duzenlenebilir'));
-
-            initDragAndDrop();
+            
+            initEditorEngine();
             renderFields();
             status.style.display = "none";
-        } catch (e) { alert("Bağlantı Hatası!"); status.style.display="none"; }
+        } catch (e) { alert("Bağlantı Hatası!"); }
     }
 
     function addNewText() {
         const svg = document.querySelector('#canvas-inner svg');
-        const viewBox = svg.viewBox.baseVal;
-        const newId = "txt_" + Date.now();
-        const newText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        newText.setAttribute("id", newId);
-        newText.setAttribute("class", "duzenlenebilir");
-        newText.setAttribute("x", viewBox.width / 2);
-        newText.setAttribute("y", viewBox.height / 2);
-        newText.setAttribute("fill", "#ffffff");
-        newText.style.fontSize = "40px";
-        newText.style.fontFamily = "'Roboto', sans-serif";
-        newText.textContent = "YENİ METİN";
-        svg.appendChild(newText);
+        const v = svg.viewBox.baseVal;
+        const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        txt.setAttribute("class", "duzenlenebilir");
+        txt.setAttribute("x", v.width / 2); txt.setAttribute("y", v.height / 2);
+        txt.setAttribute("fill", "#ffffff");
+        txt.style.fontSize = "40px";
+        txt.textContent = "YENİ METİN";
+        svg.appendChild(txt);
         renderFields();
-        initDragAndDrop();
     }
 
     function addNewImage(input) {
-        const file = input.files[0];
-        if (!file) return;
+        const file = input.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = function(e) {
             const svg = document.querySelector('#canvas-inner svg');
-            const viewBox = svg.viewBox.baseVal;
-            const newId = "img_" + Date.now();
-            const newImg = document.createElementNS("http://www.w3.org/2000/svg", "image");
-            newImg.setAttribute("id", newId);
-            newImg.setAttribute("class", "duzenlenebilir");
-            newImg.setAttribute("x", viewBox.width / 2 - 100);
-            newImg.setAttribute("y", viewBox.height / 2 - 100);
-            newImg.setAttribute("width", "200");
-            newImg.setAttribute("height", "200");
-            newImg.setAttributeNS("http://www.w3.org/1999/xlink", "href", e.target.result);
-            svg.appendChild(newImg);
+            const v = svg.viewBox.baseVal;
+            const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
+            img.setAttribute("class", "duzenlenebilir");
+            img.setAttribute("x", v.width/2-100); img.setAttribute("y", v.height/2-100);
+            img.setAttribute("width", "200"); img.setAttribute("height", "200");
+            img.setAttributeNS("http://www.w3.org/1999/xlink", "href", e.target.result);
+            svg.appendChild(img);
             renderFields();
-            initDragAndDrop();
             input.value = "";
         };
         reader.readAsDataURL(file);
     }
 
-    function initDragAndDrop() {
+    function initEditorEngine() {
         const svg = document.querySelector('#canvas-inner svg');
-        const guideLayer = document.getElementById('guide-layer');
-        const viewBox = svg.viewBox.baseVal;
-        const centerX = viewBox.width / 2;
-        const centerY = viewBox.height / 2;
+        const controlLayer = document.getElementById('control-layer');
 
         const start = (e) => {
-            const t = e.target.closest('.duzenlenebilir');
-            if (t) {
-                selectedElement = t;
+            const touch = e.touches ? e.touches[0] : e;
+            const target = e.target;
+            
+            // Eğer boyulandırma tutamacına basıldıysa
+            if (target.classList.contains('resize-handle')) {
+                resizingElement = document.getElementById(target.dataset.targetId);
+                return;
+            }
+
+            const el = target.closest('.duzenlenebilir');
+            if (el) {
+                selectedElement = el;
                 const c = getCoords(e);
-                offset.x = c.x - (parseFloat(t.getAttribute("x")) || 0);
-                offset.y = c.y - (parseFloat(t.getAttribute("y")) || 0);
+                offset.x = c.x - (parseFloat(el.getAttribute("x")) || 0);
+                offset.y = c.y - (parseFloat(el.getAttribute("y")) || 0);
+                drawResizeHandles(el);
+            } else {
+                controlLayer.innerHTML = "";
             }
         };
 
         const move = (e) => {
-            if (selectedElement) {
+            if (resizingElement) {
+                e.preventDefault();
+                const c = getCoords(e);
+                const x = parseFloat(resizingElement.getAttribute("x"));
+                const y = parseFloat(resizingElement.getAttribute("y"));
+                
+                // Resim ise width/height, metin ise font-size
+                if (resizingElement.tagName === "image") {
+                    resizingElement.setAttribute("width", Math.max(20, c.x - x));
+                    resizingElement.setAttribute("height", Math.max(20, c.y - y));
+                } else {
+                    resizingElement.style.fontSize = Math.max(10, c.x - x) + "px";
+                }
+                drawResizeHandles(resizingElement);
+            } else if (selectedElement) {
                 e.preventDefault();
                 let c = getCoords(e);
-                let newX = c.x - offset.x;
-                let newY = c.y - offset.y;
-                const bbox = selectedElement.getBBox();
-                const width = selectedElement.tagName === "image" ? parseFloat(selectedElement.getAttribute("width")) : bbox.width;
-                const height = selectedElement.tagName === "image" ? parseFloat(selectedElement.getAttribute("height")) : bbox.height;
-
-                guideLayer.innerHTML = "";
-                const targetsX = [{ val: newX, type: 'left' }, { val: newX + width / 2, type: 'center' }, { val: newX + width, type: 'right' }];
-                const targetsY = [{ val: newY, type: 'top' }, { val: newY + height / 2, type: 'center' }, { val: newY + height, type: 'bottom' }];
-
-                if (Math.abs((newX + width / 2) - centerX) < SNAP_THRESHOLD) { newX = centerX - width / 2; showGuide(centerX, 0, centerX, viewBox.height, true); }
-                if (Math.abs((newY + height / 2) - centerY) < SNAP_THRESHOLD) { newY = centerY - height / 2; showGuide(0, centerY, viewBox.width, centerY, true); }
-
-                document.querySelectorAll('.duzenlenebilir').forEach(other => {
-                    if (other === selectedElement) return;
-                    const ob = other.getBBox();
-                    const ox = parseFloat(other.getAttribute("x")) || 0;
-                    const oy = parseFloat(other.getAttribute("y")) || 0;
-                    const ow = other.tagName === "image" ? parseFloat(other.getAttribute("width")) : ob.width;
-                    const oh = other.tagName === "image" ? parseFloat(other.getAttribute("height")) : ob.height;
-
-                    const otherAxsX = [ox, ox + ow / 2, ox + ow];
-                    targetsX.forEach(t => {
-                        otherAxsX.forEach(ax => {
-                            if (Math.abs(t.val - ax) < SNAP_THRESHOLD) {
-                                if (t.type === 'left') newX = ax;
-                                if (t.type === 'center') newX = ax - width / 2;
-                                if (t.type === 'right') newX = ax - width;
-                                showGuide(ax, 0, ax, viewBox.height);
-                            }
-                        });
-                    });
-
-                    const otherAxsY = [oy, oy + oh / 2, oy + oh];
-                    targetsY.forEach(t => {
-                        otherAxsY.forEach(ay => {
-                            if (Math.abs(t.val - ay) < SNAP_THRESHOLD) {
-                                if (t.type === 'top') newY = ay;
-                                if (t.type === 'center') newY = ay - height / 2;
-                                if (t.type === 'bottom') newY = ay - height;
-                                showGuide(0, ay, viewBox.width, ay);
-                            }
-                        });
-                    });
-                });
+                let newX = c.x - offset.x; let newY = c.y - offset.y;
+                
+                // Hizalama
+                const v = svg.viewBox.baseVal;
+                controlLayer.innerHTML = "";
+                if (Math.abs(newX - v.width/2) < SNAP_THRESHOLD) newX = v.width/2;
+                
                 selectedElement.setAttribute("x", newX);
                 selectedElement.setAttribute("y", newY);
+                drawResizeHandles(selectedElement);
             }
         };
 
-        function showGuide(x1, y1, x2, y2, isCenter = false) {
-            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("x1", x1); line.setAttribute("y1", y1);
-            line.setAttribute("x2", x2); line.setAttribute("y2", y2);
-            line.classList.add(isCenter ? "center-line" : "guide-line");
-            guideLayer.appendChild(line);
+        const end = () => {
+            selectedElement = null; resizingElement = null;
+        };
+
+        function drawResizeHandles(el) {
+            controlLayer.innerHTML = "";
+            const b = el.getBBox();
+            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            rect.setAttribute("x", b.x); rect.setAttribute("y", b.y);
+            rect.setAttribute("width", b.width); rect.setAttribute("height", b.height);
+            rect.setAttribute("fill", "none"); rect.setAttribute("stroke", "#3b82f6");
+            controlLayer.appendChild(rect);
+
+            const handle = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            const hSize = 12;
+            handle.setAttribute("x", b.x + b.width - hSize/2);
+            handle.setAttribute("y", b.y + b.height - hSize/2);
+            handle.setAttribute("width", hSize); handle.setAttribute("height", hSize);
+            handle.setAttribute("class", "resize-handle");
+            handle.dataset.targetId = el.id || (el.id = "el_" + Date.now());
+            controlLayer.appendChild(handle);
         }
 
         const getCoords = (e) => {
             const CTM = svg.getScreenCTM();
-            const touch = e.touches ? e.touches[0] : e;
-            return { x: (touch.clientX - CTM.e) / CTM.a, y: (touch.clientY - CTM.f) / CTM.d };
+            const t = e.touches ? e.touches[0] : e;
+            return { x: (t.clientX - CTM.e) / CTM.a, y: (t.clientY - CTM.f) / CTM.d };
         };
 
         svg.addEventListener('mousedown', start); svg.addEventListener('touchstart', start, {passive:false});
         window.addEventListener('mousemove', move); window.addEventListener('touchmove', move, {passive:false});
-        window.addEventListener('mouseup', () => { selectedElement = null; guideLayer.innerHTML = ""; }); 
-        window.addEventListener('touchend', () => { selectedElement = null; guideLayer.innerHTML = ""; });
+        window.addEventListener('mouseup', end); window.addEventListener('touchend', end);
     }
 
     function renderFields() {
         const container = document.getElementById('editor-fields');
         container.innerHTML = "";
-        
         document.querySelectorAll('.duzenlenebilir').forEach((el, i) => {
             const box = document.createElement('div');
             box.className = 'field-box';
-            
-            const delBtn = document.createElement('div');
-            delBtn.className = 'delete-btn-ui';
-            delBtn.innerHTML = "×";
-            delBtn.onclick = () => { if(confirm("Silmek istediğinize emin misiniz?")) { el.remove(); renderFields(); } };
-            box.appendChild(delBtn);
-
-            const title = document.createElement('div');
-            title.style.cssText = "font-size:10px; color:#94a3b8; font-weight:bold; margin-bottom:8px;";
-            title.innerText = (el.id || (el.tagName === 'text' ? 'METİN' : 'RESİM')).toUpperCase();
-            box.appendChild(title);
-
-            if (el.tagName === 'text') {
-                const txt = document.createElement('input');
-                txt.type = "text"; txt.className = "text-input";
-                txt.value = el.textContent.trim();
-                txt.oninput = function() { el.textContent = this.value; };
-                box.appendChild(txt);
-
-                const grid = document.createElement('div');
-                grid.className = "control-grid";
-                const fs = document.createElement('select');
-                fs.className = "font-selector";
-                fonts.forEach(f => {
-                    const opt = document.createElement('option');
-                    opt.value = f.val; opt.innerText = f.name;
-                    if(el.style.fontFamily === f.val) opt.selected = true;
-                    fs.appendChild(opt);
-                });
-                fs.onchange = function() { el.style.fontFamily = this.value; };
-                grid.appendChild(fs);
-
-                const cp = document.createElement('input');
-                cp.type = "color";
-                cp.style.cssText = "width:40px; height:40px; border:none; border-radius:6px; cursor:pointer;";
-                cp.value = rgbToHex(window.getComputedStyle(el).fill);
-                cp.oninput = function() { el.setAttribute('fill', this.value); el.style.setProperty('fill', this.value, 'important'); };
-                grid.appendChild(cp);
-                box.appendChild(grid);
-
-                const curSize = parseInt(window.getComputedStyle(el).fontSize) || 20;
-                const rs = document.createElement('input');
-                rs.type = "range"; rs.min = "8"; rs.max = "300"; rs.value = curSize;
-                rs.style.cssText = "width:100%; accent-color:var(--accent);";
-                rs.oninput = function() { el.style.fontSize = this.value + "px"; };
-                box.appendChild(rs);
-
-            } else if (el.tagName === 'image') {
-                const curW = parseInt(el.getAttribute('width')) || 100;
-                const ws = document.createElement('input');
-                ws.type = "range"; ws.min = "10"; ws.max = "1200"; ws.value = curW;
-                ws.style.cssText = "width:100%; accent-color:var(--img); margin-bottom:10px;";
-                ws.oninput = function() { el.setAttribute('width', this.value); };
-                box.appendChild(ws);
-
-                const curH = parseInt(el.getAttribute('height')) || 100;
-                const hs = document.createElement('input');
-                hs.type = "range"; hs.min = "10"; hs.max = "1200"; hs.value = curH;
-                hs.style.cssText = "width:100%; accent-color:var(--img);";
-                hs.oninput = function() { el.setAttribute('height', this.value); };
-                box.appendChild(hs);
-            }
+            box.innerHTML = `
+                <div class="delete-btn-ui" onclick="if(confirm('Silinsin mi?')){document.querySelectorAll('.duzenlenebilir')[${i}].remove(); renderFields();}">×</div>
+                <div style="font-size:10px; color:#94a3b8; font-weight:bold; margin-bottom:8px;">ÖĞE ${i+1}</div>
+                ${el.tagName === 'text' ? `<input type="text" class="text-input" value="${el.textContent.trim()}" oninput="document.querySelectorAll('.duzenlenebilir')[${i}].textContent = this.value">` : ''}
+                <div style="display:flex; align-items:center; gap:10px;">
+                    ${el.tagName === 'text' ? `<input type="color" value="${rgbToHex(window.getComputedStyle(el).fill)}" oninput="document.querySelectorAll('.duzenlenebilir')[${i}].setAttribute('fill', this.value)" style="width:40px; height:40px; border:none; border-radius:6px;">` : ''}
+                    <span style="font-size:11px; color:#888;">Taşıyarak veya Köşeden Boyutlandırın</span>
+                </div>
+            `;
             container.appendChild(box);
         });
     }
 
     function rgbToHex(rgb) {
-        if (rgb.startsWith('#')) return rgb;
         const p = rgb.match(/\d+/g);
         return p ? "#" + p.map(x => parseInt(x).toString(16).padStart(2, '0')).join('').substring(0, 6) : "#ffffff";
     }
 
     async function saveData() {
-        const btn = document.getElementById('save-btn');
-        const st = document.getElementById('status-info');
-        const fileName = document.getElementById('file-selector').value;
-        btn.disabled = true; st.innerText = "KAYDEDİLİYOR..."; st.style.display = "block";
+        const status = document.getElementById('status-info');
+        status.innerText = "KAYDEDİLİYOR..."; status.style.display = "block";
         try {
             const svgText = new XMLSerializer().serializeToString(document.querySelector('#canvas-inner svg'));
             const encoded = btoa(unescape(encodeURIComponent(svgText)));
             const res = await fetch(WORKER_URL, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json", "X-Auth-Key": SESSION_PASS, "X-File-Name": fileName },
-                body: JSON.stringify({ message: "Content Updated", content: encoded, sha: SHA_KEY })
+                headers: { "Content-Type": "application/json", "X-Auth-Key": SESSION_PASS, "X-File-Name": document.getElementById('file-selector').value },
+                body: JSON.stringify({ message: "Resize Update", content: encoded, sha: SHA_KEY })
             });
             if (res.ok) {
-                const data = await res.json();
-                SHA_KEY = data.content.sha;
-                st.innerText = "BAŞARIYLA KAYDEDİLDİ!";
-                setTimeout(() => st.style.display = "none", 2000);
-            } else alert("Kayıt Hatası!");
+                const data = await res.json(); SHA_KEY = data.content.sha;
+                status.innerText = "BAŞARIYLA KAYDEDİLDİ!";
+                setTimeout(() => status.style.display = "none", 2000);
+            }
         } catch (e) { alert("Hata!"); }
-        btn.disabled = false;
     }
 </script>
 </body>
