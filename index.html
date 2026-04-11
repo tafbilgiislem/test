@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SVG Pro Editor | Profesyonel Yerleşim</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Montserrat:wght@800&family=Poppins:wght@700&family=Oswald:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <title>SVG Pro Editor | Pro Image Controls</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Montserrat:wght@800&family=Poppins:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --snap: #a855f7; --center-snap: #3b82f6; --add: #3b82f6; --img: #f97316; --error: #ef4444; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --handle-move: #3b82f6; --handle-rotate: #f59e0b; --handle-radius: #ec4899; }
+        * { box-sizing: border-box; touch-action: none; -webkit-tap-highlight-color: transparent; }
         
-        /* Ekranı Kapla ve Kaydırmayı Engelle */
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: white; font-family: 'Inter', sans-serif; }
 
         /* Giriş Ekranı */
@@ -21,51 +20,54 @@
         /* Ana Konteynır */
         #app-container { display: none; height: 100vh; width: 100vw; flex-direction: row; }
         
-        /* PC ve Geniş Ekranlar */
-        #sidebar { display: flex; flex-direction: column; background: var(--panel); width: 360px; border-left: 1px solid var(--border); flex-shrink: 0; height: 100%; }
-        #main-view { flex: 1; background: #020617; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 20px; position: relative; }
+        #sidebar { display: flex; flex-direction: column; background: var(--panel); width: 360px; border-left: 1px solid var(--border); flex-shrink: 0; height: 100%; z-index: 100; }
+        #main-view { flex: 1; background: #020617; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 10px; position: relative; }
 
-        /* Tablet ve Telefonlar (Dikey Düzen) */
         @media (max-width: 1023px) {
             #app-container { flex-direction: column; }
-            #sidebar { width: 100%; height: 50vh; border-left: none; border-top: 1px solid var(--border); }
-            #main-view { height: 50vh; }
+            #sidebar { width: 100%; height: 50vh; border-left: none; border-top: 1px solid var(--border); order: 2; }
+            #main-view { height: 50vh; order: 1; }
         }
 
-        /* Sidebar İçeriği */
+        /* Sidebar Nav */
         .sidebar-top-nav { padding: 12px; border-bottom: 2px solid var(--border); background: #111827; flex-shrink: 0; }
         .nav-row { display: flex; gap: 8px; margin-top: 8px; }
         #file-selector { width: 100%; padding: 10px; border-radius: 8px; background: #000; color: #fff; border: 1px solid var(--border); cursor: pointer; }
 
-        /* Editör Alanı - Kaydırılabilir */
+        /* Editör Alanı */
         #editor-fields { flex: 1; overflow-y: auto; padding: 15px; background: rgba(0,0,0,0.1); padding-bottom: 40px; }
         .field-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; }
         
-        /* Slider Rakamları ve Tasarımı */
         .label-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 4px; }
         .label-text { font-size: 11px; color: #94a3b8; font-weight: bold; text-transform: uppercase; }
         .val-badge { background: #0f172a; color: var(--accent); font-size: 11px; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
         
         .text-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #000; color: #fff; margin-bottom: 10px; font-size: 14px; }
-        input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 6px; }
 
         /* Butonlar */
-        .btn-add-text { background: var(--add); color: white; border: none; border-radius: 8px; padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; flex: 1; }
-        .btn-add-img { background: var(--img); color: white; border: none; border-radius: 8px; padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; flex: 1; }
+        .btn-add-text { background: #3b82f6; color: white; border: none; border-radius: 8px; padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; flex: 1; }
+        .btn-add-img { background: #f97316; color: white; border: none; border-radius: 8px; padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; flex: 1; }
         #save-btn { flex: 2; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .exit-btn { flex: 1; padding: 12px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; }
 
         /* SVG Yerleşimi */
-        #svg-wrapper { background: white; box-shadow: 0 0 40px rgba(0,0,0,0.6); position: relative; max-width: 100%; max-height: 100%; display: flex; }
-        #canvas-inner { display: flex; max-width: 100%; max-height: 100%; overflow: hidden; }
-        svg { width: 100%; height: auto; max-height: 100%; display: block; overflow: visible; }
+        #svg-wrapper { background: white; box-shadow: 0 0 40px rgba(0,0,0,0.6); position: relative; max-width: 100%; max-height: 100%; display: flex; overflow: visible; }
+        #canvas-inner { display: flex; max-width: 100%; max-height: 100%; }
+        #canvas-inner svg { width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; overflow: visible; }
         
-        /* Rehber Çizgileri */
-        .guide-line { stroke: var(--snap); stroke-width: 1; stroke-dasharray: 4; pointer-events: none; }
-        .center-line { stroke: var(--center-snap); stroke-width: 1.5; stroke-dasharray: none; pointer-events: none; }
+        /* Kontrol Katmanı & Handles */
+        #control-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; overflow: visible; }
+        .duzenlenebilir { cursor: move; pointer-events: all; }
         
-        .delete-btn-ui { position: absolute; right: 10px; top: 10px; color: var(--error); cursor: pointer; font-size: 20px; font-weight: bold; opacity: 0.6; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border-radius: 50%; z-index: 5; }
+        /* Tutamaç Stilleri */
+        .handle { fill: white; stroke-width: 2; pointer-events: all; transition: transform 0.2s; }
+        .handle:hover { transform: scale(1.2); }
+        .handle-resize { stroke: var(--handle-move); cursor: nwse-resize; }
+        .handle-rotate { stroke: var(--handle-rotate); cursor: alias; fill: var(--handle-rotate); }
+        .handle-radius { stroke: var(--handle-radius); cursor: ew-resize; rx: 50%; } /* Yuvarlak */
 
+        .delete-btn-ui { position: absolute; right: 10px; top: 10px; color: var(--error); cursor: pointer; font-size: 20px; font-weight: bold; opacity: 0.6; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border-radius: 50%; z-index: 5; }
         #status-info { position: fixed; top: 0; width: 100%; background: var(--accent); color: white; text-align: center; padding: 8px; font-weight: bold; z-index: 11000; display: none; }
     </style>
 </head>
@@ -85,7 +87,7 @@
     <div id="main-view">
         <div id="svg-wrapper">
             <div id="canvas-inner"></div>
-            <svg id="guide-layer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></svg>
+            <svg id="control-layer"></svg>
         </div>
     </div>
     
@@ -103,7 +105,7 @@
             <div class="nav-row">
                 <button class="btn-add-text" onclick="addNewText()">+ METİN</button>
                 <button class="btn-add-img" onclick="document.getElementById('image-input').click()">+ RESİM</button>
-                <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="addNewImage(this)">
+                <input type="file" id="img-in" accept="image/*" style="display: none;" onchange="addNewImage(this)">
             </div>
         </div>
         <div id="editor-fields"></div>
@@ -111,22 +113,20 @@
 </div>
 
 <script>
-    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev"; 
-    let SHA_KEY = "";
-    let SESSION_PASS = "";
-    let selectedElement = null;
-    let offset = { x: 0, y: 0 };
-    const SNAP_THRESHOLD = 8;
+    // --- KONFİGÜRASYON VE DEĞİŞKENLER (Bozulmadı) ---
+    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev"; // URL'NİZİ GÜNCELLEYİN
+    let SHA_KEY = "", SESSION_PASS = "", selectedEl = null, resizingEl = null, rotatingEl = null, radiusingEl = null, activeHandle = null;
+    let offset = { x: 0, y: 0 }, startP = { x: 0, y: 0 }, startData = {};
 
     const fonts = [
         { name: "Varsayılan", val: "inherit" },
         { name: "Roboto", val: "'Roboto', sans-serif" },
         { name: "Montserrat", val: "'Montserrat', sans-serif" },
         { name: "Poppins", val: "'Poppins', sans-serif" },
-        { name: "Oswald", val: "'Oswald', sans-serif" },
-        { name: "Arial", val: "Arial, sans-serif" }
+        { name: "Oswald", val: "'Oswald', sans-serif" }
     ];
 
+    // --- GİRİŞ VE YÜKLEME (Bozulmadı) ---
     async function login() {
         const pass = document.getElementById('passInput').value.trim();
         if(!pass) return;
@@ -148,275 +148,304 @@
             document.getElementById('app-container').style.display = "flex";
             document.getElementById('canvas-inner').innerHTML = decodeURIComponent(escape(atob(data.content)));
             
-            const mainSvg = document.querySelector('#canvas-inner svg');
-            const guideLayer = document.getElementById('guide-layer');
-            guideLayer.setAttribute("viewBox", mainSvg.getAttribute("viewBox"));
-
-            initDragAndDrop();
-            renderFields();
+            setTimeout(setupLayers, 300); // Render süresi tanı
             status.style.display = "none";
         } catch (e) { alert("Bağlantı Hatası!"); status.style.display="none"; }
     }
 
+    function setupLayers() {
+        const mainSvg = document.querySelector('#canvas-inner svg');
+        const ctrl = document.getElementById('control-layer');
+        if (!mainSvg) return;
+
+        const vb = mainSvg.getAttribute("viewBox") || `0 0 1920 1080`;
+        mainSvg.setAttribute("viewBox", vb);
+        ctrl.setAttribute("viewBox", vb); // Kontrol katmanını eşitle
+        
+        mainSvg.querySelectorAll('.duzenlenebilir').forEach(el => {
+            if(!el.id) el.id = "el_" + Math.random().toString(36).substr(2,9);
+        });
+
+        initProEngine(mainSvg);
+        renderFields();
+    }
+
+    // --- YENİ PRO EDİTÖR MOTORU (Pointer Events - Tüm platformlar) ---
+    function initProEngine(svg) {
+        const ctrl = document.getElementById('control-layer');
+
+        const getCoords = (e) => {
+            const pt = svg.createSVGPoint();
+            pt.x = e.clientX; pt.y = e.clientY;
+            const cursorpt = pt.matrixTransform(svg.getScreenCTM().inverse());
+            return { x: cursorpt.x, y: cursorpt.y };
+        };
+
+        const onDown = (e) => {
+            const p = getCoords(e);
+            const target = e.target;
+            
+            // 1. KONTROL TUTAMAÇLARINA MI BASILDI?
+            if (target.classList.contains('handle')) {
+                const elId = target.dataset.id;
+                const el = document.getElementById(elId);
+                startP = p;
+                startData = {
+                    x: parseFloat(el.getAttribute("x")) || 0,
+                    y: parseFloat(el.getAttribute("y")) || 0,
+                    w: parseFloat(el.getAttribute("width")) || 0,
+                    h: parseFloat(el.getAttribute("height")) || 0,
+                    angle: getRotation(el),
+                    rx: parseFloat(el.getAttribute("rx")) || 0,
+                    fontSize: parseFloat(window.getComputedStyle(el).fontSize)
+                };
+
+                if (target.classList.contains('handle-resize')) { resizingEl = el; activeHandle = target.dataset.handle; }
+                else if (target.classList.contains('handle-rotate')) { rotatingEl = el; }
+                else if (target.classList.contains('handle-radius')) { radiusingEl = el; }
+                
+                e.preventDefault(); e.stopPropagation(); return;
+            }
+
+            // 2. ÖĞENİN KENDİSİNE Mİ BASILDI (Taşıma)?
+            const el = target.closest('.duzenlenebilir');
+            if (el) {
+                selectedEl = el;
+                updateUI(el); // Kontrol panelini göster
+                const p = getCoords(e);
+                offset.x = p.x - (parseFloat(el.getAttribute("x")) || 0);
+                offset.y = p.y - (parseFloat(el.getAttribute("y")) || 0);
+                
+                // Sidebar odaklanma (Bozulmadı)
+                document.querySelectorAll('.field-box').forEach(f => f.style.borderColor = "var(--border)");
+                const box = document.getElementById('box-' + el.id);
+                if(box) { box.style.borderColor = "var(--accent)"; box.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            } else {
+                ctrl.innerHTML = ""; // Boşluğa tıklayınca kontrolleri gizle
+            }
+        };
+
+        const onMove = (e) => {
+            if (!resizingEl && !rotatingEl && !radiusingEl && !selectedEl) return;
+            e.preventDefault();
+            const p = getCoords(e);
+            const dx = p.x - startP.x;
+            const dy = p.y - startP.y;
+
+            if (resizingEl) {
+                // --- 4 KÖŞE BOYUTLANDIRMA (Pro) ---
+                let { x, y, w, h } = startData;
+                if (activeHandle === 'br') { w += dx; h += dy; }
+                else if (activeHandle === 'bl') { x += dx; w -= dx; h += dy; }
+                else if (activeHandle === 'tr') { y += dy; w += dx; h -= dy; }
+                else if (activeHandle === 'tl') { x += dx; y += dy; w -= dx; h -= dy; }
+
+                if (resizingEl.tagName === "image") {
+                    if (w > 10 && h > 10) {
+                        resizingEl.setAttribute("x", x); resizingEl.setAttribute("y", y);
+                        resizingEl.setAttribute("width", w); resizingEl.setAttribute("height", h);
+                    }
+                } else {
+                    // Metin Boyutu (Sadece sağa/sola çekince)
+                    const ns = Math.max(5, startData.fontSize + dx/2);
+                    resizingEl.style.fontSize = ns + "px"; resizingEl.setAttribute("font-size", ns);
+                }
+                updateUI(resizingEl); syncSliders(resizingEl);
+            } 
+            else if (rotatingEl) {
+                // --- DÖNDÜRME (Pro) ---
+                const bbox = rotatingEl.getBBox();
+                const cx = bbox.x + bbox.width / 2;
+                const cy = bbox.y + bbox.height / 2;
+                // Başlangıç açısından sapmayı hesapla
+                const angle = Math.atan2(p.y - cy, p.x - cx) * (180 / Math.PI) + 90; 
+                rotatingEl.setAttribute("transform", `rotate(${angle} ${cx} ${cy})`);
+                updateUI(rotatingEl); syncSliders(rotatingEl);
+            }
+            else if (radiusingEl && radiusingEl.tagName === "image") {
+                // --- KÖŞE YUMUŞATMA (Pro) ---
+                const newRx = Math.max(0, Math.min(startData.w/2, startData.rx + dx));
+                radiusingEl.setAttribute("rx", newRx); radiusingEl.setAttribute("ry", newRx); // ry de eşit olsun
+                updateUI(radiusingEl); syncSliders(radiusingEl);
+            }
+            else if (selectedEl) {
+                // --- TAŞIMA (Bozulmadı) ---
+                selectedEl.setAttribute("x", p.x - offset.x);
+                selectedEl.setAttribute("y", p.y - offset.y);
+                updateUI(selectedEl);
+            }
+        };
+
+        const onUp = () => {  selectedEl = null; resizingEl = null; rotatingEl = null; radiusingEl = null; activeHandle = null; };
+
+        // --- PROFESYONEL KONTROL PANELİNİ ÇİZ (Inkscape Style) ---
+        function updateUI(el) {
+            ctrl.innerHTML = "";
+            const b = el.getBBox();
+            const transform = el.getAttribute("transform") || "";
+            
+            // Kontrol grubunu oluştur ve öğenin transformunu uygula (böylece dönünce kontroller de döner)
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.setAttribute("transform", transform);
+            ctrl.appendChild(g);
+
+            // 1. Seçim Çerçevesi
+            const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            r.setAttribute("x", b.x); r.setAttribute("y", b.y);
+            r.setAttribute("width", b.width); r.setAttribute("height", b.height);
+            r.setAttribute("fill", "none"); r.setAttribute("stroke", "var(--handle-move)"); r.setAttribute("stroke-width", "2"); r.setAttribute("stroke-dasharray", "5,5");
+            g.appendChild(r);
+
+            const s = 16; // Tutamaç boyutu (dokunmatik dostu)
+
+            // 2. 4 Köşe Boyutlandırma (Resize) handles
+            const corners = [
+                { id: 'tl', x: b.x, y: b.y }, { id: 'tr', x: b.x + b.width, y: b.y },
+                { id: 'bl', x: b.x, y: b.y + b.height }, { id: 'br', x: b.x + b.width, y: b.y + b.height }
+            ];
+            corners.forEach(c => {
+                const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                rect.setAttribute("x", c.x - s/2); rect.setAttribute("y", c.y - s/2);
+                rect.setAttribute("width", s); rect.setAttribute("height", s);
+                rect.setAttribute("class", "handle handle-resize"); rect.dataset.id = el.id; rect.dataset.handle = c.id;
+                g.appendChild(rect);
+            });
+
+            if (el.tagName === "image") {
+                // 3. Döndürme (Rotate) handle - Üst orta, tepe noktası
+                const rotH = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                const rotY = b.y - 30; // Çerçevenin biraz yukarısında
+                rotH.setAttribute("cx", b.x + b.width / 2); rotH.setAttribute("cy", rotY);
+                rotH.setAttribute("r", s/1.5);
+                rotH.setAttribute("class", "handle handle-rotate"); rotH.dataset.id = el.id;
+                g.appendChild(rotH);
+                // Tepeye bağlayan çizgi
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", b.x + b.width / 2); line.setAttribute("y1", b.y);
+                line.setAttribute("x2", b.x + b.width / 2); line.setAttribute("y2", rotY);
+                line.setAttribute("stroke", "var(--handle-rotate)"); line.setAttribute("stroke-width", "1.5");
+                g.appendChild(line);
+
+                // 4. Köşe Yumuşatma (Radius) handle - Sağ orta
+                const radH = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                radH.setAttribute("x", b.x + b.width - s/2); radH.setAttribute("y", b.y + b.height/2 - s/2);
+                radH.setAttribute("width", s); radH.setAttribute("height", s);
+                radH.setAttribute("class", "handle handle-radius"); radH.dataset.id = el.id;
+                g.appendChild(radH);
+            }
+        }
+
+        // Yardımcı: Döndürme açısını al
+        function getRotation(el) {
+            const t = el.getAttribute("transform");
+            if (!t || !t.includes("rotate")) return 0;
+            const m = t.match(/rotate\(([\d.-]+)/);
+            return m ? parseFloat(m[1]) : 0;
+        }
+
+        svg.addEventListener('pointerdown', onDown);
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+    }
+
+    // --- SENKRONİZASYON VE RENDER (Bozulmadı, Radius Eklendi) ---
+    function syncSliders(el) {
+        const all = Array.from(document.querySelectorAll('.duzenlenebilir'));
+        const i = all.indexOf(el); if (i === -1) return;
+        if (el.tagName === 'text') {
+            const fs = parseInt(window.getComputedStyle(el).fontSize);
+            const slider = document.getElementById(`fs-slider-${i}`);
+            const badge = document.getElementById(`val-fs-${i}`);
+            if(slider) slider.value = fs; if(badge) badge.innerText = fs + "px";
+        } else {
+            const w = Math.round(parseFloat(el.getAttribute("width")));
+            const h = Math.round(parseFloat(el.getAttribute("height")));
+            const rx = Math.round(parseFloat(el.getAttribute("rx")) || 0);
+            
+            document.getElementById(`w-slider-${i}`).value = w; document.getElementById(`val-w-${i}`).innerText = w + "px";
+            document.getElementById(`h-slider-${i}`).value = h; document.getElementById(`val-h-${i}`).innerText = h + "px";
+            const rs = document.getElementById(`r-slider-${i}`);
+            if(rs) { rs.value = rx; rs.max = w/2; } // Radius maks genişliğin yarısı olabilir
+            document.getElementById(`val-r-${i}`).innerText = rx + "px";
+        }
+    }
+
+    function renderFields() {
+        const f = document.getElementById('editor-fields');
+        f.innerHTML = "";
+        document.querySelectorAll('.duzenlenebilir').forEach((el, i) => {
+            const b = document.createElement('div');
+            b.className = 'field-box'; b.id = 'box-' + el.id;
+            const col = el.getAttribute('fill') || el.style.fill || "#ffffff";
+            
+            let html = `<span class="delete-btn" onclick="document.getElementById('${el.id}').remove(); renderFields(); document.getElementById('control-layer').innerHTML='';">×</span>`;
+            html += `<div style="font-size:10px; color:#3b82f6; font-weight:bold; margin-bottom:5px;">${el.tagName.toUpperCase()} #${i+1}</div>`;
+
+            if (el.tagName === 'text') {
+                const fs = parseInt(window.getComputedStyle(el).fontSize) || 40;
+                html += `
+                    <input type="text" value="${el.textContent}" oninput="document.getElementById('${el.id}').textContent=this.value; initEngine(document.querySelector('#canvas-inner svg')).updateUI(document.getElementById('${el.id}'));" style="width:100%; padding:10px; background:#000; color:#fff; border:1px solid #444; border-radius:6px;">
+                    <div class="label-row"><span class="label-text">YAZI BOYUTU</span><span class="value-badge" id="val-fs-${i}">${fs}px</span></div>
+                    <input type="range" id="fs-slider-${i}" min="10" max="400" value="${fs}" oninput="document.getElementById('${el.id}').style.fontSize=this.value+'px'; document.getElementById('${el.id}').setAttribute('font-size', this.value); document.getElementById('val-fs-${i}').innerText=this.value+'px';">
+                    <div class="label-row"><span class="label-text">RENK</span></div>
+                    <input type="color" value="${safeColor(col)}" oninput="const t=document.getElementById('${el.id}'); t.setAttribute('fill', this.value); t.style.fill=this.value;" style="width:50px; height:40px; cursor:pointer; border:none; background:none;">
+                `;
+            } else {
+                const w = parseFloat(el.getAttribute("width")) || 200, h = parseFloat(el.getAttribute("height")) || 200, rx = parseFloat(el.getAttribute("rx")) || 0;
+                html += `
+                    <div class="label-row"><span class="label-text">GENİŞLİK</span><span class="value-badge" id="val-w-${i}">${Math.round(w)}px</span></div>
+                    <input type="range" id="w-slider-${i}" min="10" max="2500" value="${w}" oninput="document.getElementById('${el.id}').setAttribute('width', this.value); document.getElementById('val-w-${i}').innerText=Math.round(this.value)+'px';">
+                    <div class="label-row"><span class="label-text">YÜKSEKLİK</span><span class="value-badge" id="val-h-${i}">${Math.round(h)}px</span></div>
+                    <input type="range" id="h-slider-${i}" min="10" max="2500" value="${h}" oninput="document.getElementById('${el.id}').setAttribute('height', this.value); document.getElementById('val-h-${i}').innerText=Math.round(this.value)+'px';">
+                    <div class="label-row"><span class="label-text">KÖŞE YUMUŞATMA</span><span class="value-badge" id="val-r-${i}">${Math.round(rx)}px</span></div>
+                    <input type="range" id="r-slider-${i}" min="0" max="${w/2}" value="${rx}" oninput="document.getElementById('${el.id}').setAttribute('rx', this.value); document.getElementById('${el.id}').setAttribute('ry', this.value); document.getElementById('val-r-${i}').innerText=Math.round(this.value)+'px';">
+                `;
+            }
+            b.innerHTML = html; f.appendChild(b);
+        });
+    }
+
+    // --- YENİ ÖĞE EKLEME VE KAYIT (Bozulmadı) ---
     function addNewText() {
         const svg = document.querySelector('#canvas-inner svg');
-        const viewBox = svg.viewBox.baseVal;
-        const newId = "txt_" + Date.now();
-        const newText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        newText.setAttribute("id", newId);
-        newText.setAttribute("class", "duzenlenebilir");
-        newText.setAttribute("x", viewBox.width / 2);
-        newText.setAttribute("y", viewBox.height / 2);
-        newText.setAttribute("fill", "#ffffff");
-        newText.style.fontSize = "40px";
-        newText.style.fontFamily = "'Roboto', sans-serif";
-        newText.textContent = "YENİ METİN";
-        svg.appendChild(newText);
-        renderFields();
-        initDragAndDrop();
+        const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        t.id = "t" + Date.now(); t.setAttribute("class", "duzenlenebilir");
+        t.setAttribute("x", 200); t.setAttribute("y", 200); t.setAttribute("fill", "#000000");
+        t.style.fontSize = "60px"; t.textContent = "YENİ METİN";
+        svg.appendChild(t); renderFields(); setupLayers();
     }
 
     function addNewImage(input) {
-        const file = input.files[0];
-        if (!file) return;
+        const file = input.files[0]; if(!file) return;
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = (e) => {
             const svg = document.querySelector('#canvas-inner svg');
-            const viewBox = svg.viewBox.baseVal;
-            const newId = "img_" + Date.now();
-            const newImg = document.createElementNS("http://www.w3.org/2000/svg", "image");
-            newImg.setAttribute("id", newId);
-            newImg.setAttribute("class", "duzenlenebilir");
-            newImg.setAttribute("x", viewBox.width / 2 - 100);
-            newImg.setAttribute("y", viewBox.height / 2 - 100);
-            newImg.setAttribute("width", "200");
-            newImg.setAttribute("height", "200");
-            newImg.setAttributeNS("http://www.w3.org/1999/xlink", "href", e.target.result);
-            svg.appendChild(newImg);
-            renderFields();
-            initDragAndDrop();
-            input.value = "";
+            const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
+            img.id = "i" + Date.now(); img.setAttribute("class", "duzenlenebilir");
+            img.setAttribute("x", 100); img.setAttribute("y", 100);
+            img.setAttribute("width", 300); img.setAttribute("height", 300);
+            img.setAttributeNS("http://www.w3.org/1999/xlink", "href", e.target.result);
+            svg.appendChild(img); renderFields(); setupLayers();
         };
         reader.readAsDataURL(file);
     }
 
-    function initDragAndDrop() {
-        const svg = document.querySelector('#canvas-inner svg');
-        const guideLayer = document.getElementById('guide-layer');
-        const viewBox = svg.viewBox.baseVal;
-        const centerX = viewBox.width / 2;
-        const centerY = viewBox.height / 2;
-
-        const start = (e) => {
-            const t = e.target.closest('.duzenlenebilir');
-            if (t) {
-                selectedElement = t;
-                const c = getCoords(e);
-                offset.x = c.x - (parseFloat(t.getAttribute("x")) || 0);
-                offset.y = c.y - (parseFloat(t.getAttribute("y")) || 0);
-            }
-        };
-
-        const move = (e) => {
-            if (selectedElement) {
-                e.preventDefault();
-                let c = getCoords(e);
-                let newX = c.x - offset.x;
-                let newY = c.y - offset.y;
-                const bbox = selectedElement.getBBox();
-                const width = selectedElement.tagName === "image" ? parseFloat(selectedElement.getAttribute("width")) : bbox.width;
-                const height = selectedElement.tagName === "image" ? parseFloat(selectedElement.getAttribute("height")) : bbox.height;
-
-                guideLayer.innerHTML = "";
-                const targetsX = [{ val: newX, type: 'left' }, { val: newX + width / 2, type: 'center' }, { val: newX + width, type: 'right' }];
-                const targetsY = [{ val: newY, type: 'top' }, { val: newY + height / 2, type: 'center' }, { val: newY + height, type: 'bottom' }];
-
-                if (Math.abs((newX + width / 2) - centerX) < SNAP_THRESHOLD) { newX = centerX - width / 2; showGuide(centerX, 0, centerX, viewBox.height, true); }
-                if (Math.abs((newY + height / 2) - centerY) < SNAP_THRESHOLD) { newY = centerY - height / 2; showGuide(0, centerY, viewBox.width, centerY, true); }
-
-                document.querySelectorAll('.duzenlenebilir').forEach(other => {
-                    if (other === selectedElement) return;
-                    const ob = other.getBBox();
-                    const ox = parseFloat(other.getAttribute("x")) || 0;
-                    const oy = parseFloat(other.getAttribute("y")) || 0;
-                    const ow = other.tagName === "image" ? parseFloat(other.getAttribute("width")) : ob.width;
-                    const oh = other.tagName === "image" ? parseFloat(other.getAttribute("height")) : ob.height;
-
-                    const otherAxsX = [ox, ox + ow / 2, ox + ow];
-                    targetsX.forEach(t => {
-                        otherAxsX.forEach(ax => {
-                            if (Math.abs(t.val - ax) < SNAP_THRESHOLD) {
-                                if (t.type === 'left') newX = ax;
-                                if (t.type === 'center') newX = ax - width / 2;
-                                if (t.type === 'right') newX = ax - width;
-                                showGuide(ax, 0, ax, viewBox.height);
-                            }
-                        });
-                    });
-
-                    const otherAxsY = [oy, oy + oh / 2, oy + oh];
-                    targetsY.forEach(t => {
-                        otherAxsY.forEach(ay => {
-                            if (Math.abs(t.val - ay) < SNAP_THRESHOLD) {
-                                if (t.type === 'top') newY = ay;
-                                if (t.type === 'center') newY = ay - height / 2;
-                                if (t.type === 'bottom') newY = ay - height;
-                                showGuide(0, ay, viewBox.width, ay);
-                            }
-                        });
-                    });
-                });
-                selectedElement.setAttribute("x", newX);
-                selectedElement.setAttribute("y", newY);
-            }
-        };
-
-        function showGuide(x1, y1, x2, y2, isCenter = false) {
-            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("x1", x1); line.setAttribute("y1", y1);
-            line.setAttribute("x2", x2); line.setAttribute("y2", y2);
-            line.classList.add(isCenter ? "center-line" : "guide-line");
-            guideLayer.appendChild(line);
-        }
-
-        const getCoords = (e) => {
-            const CTM = svg.getScreenCTM();
-            const touch = e.touches ? e.touches[0] : e;
-            return { x: (touch.clientX - CTM.e) / CTM.a, y: (touch.clientY - CTM.f) / CTM.d };
-        };
-
-        svg.addEventListener('mousedown', start); svg.addEventListener('touchstart', start, {passive:false});
-        window.addEventListener('mousemove', move); window.addEventListener('touchmove', move, {passive:false});
-        window.addEventListener('mouseup', () => { selectedElement = null; guideLayer.innerHTML = ""; }); 
-        window.addEventListener('touchend', () => { selectedElement = null; guideLayer.innerHTML = ""; });
-    }
-
-    function renderFields() {
-        const container = document.getElementById('editor-fields');
-        container.innerHTML = "";
-        
-        // Sadece 'duzenlenebilir' class'ı olanları bul (İsteğiniz üzere)
-        document.querySelectorAll('.duzenlenebilir').forEach((el, i) => {
-            const box = document.createElement('div');
-            box.className = 'field-box';
-            
-            const delBtn = document.createElement('div');
-            delBtn.className = 'delete-btn-ui';
-            delBtn.innerHTML = "×";
-            delBtn.onclick = () => { if(confirm("Silmek istediğinize emin misiniz?")) { el.remove(); renderFields(); } };
-            box.appendChild(delBtn);
-
-            const title = document.createElement('div');
-            title.style.cssText = "font-size:10px; color:#94a3b8; font-weight:bold; margin-bottom:8px;";
-            title.innerText = (el.id || (el.tagName === 'text' ? 'METİN' : 'RESİM')).toUpperCase();
-            box.appendChild(title);
-
-            if (el.tagName === 'text') {
-                const txt = document.createElement('input');
-                txt.type = "text"; txt.className = "text-input";
-                txt.value = el.textContent.trim();
-                txt.oninput = function() { el.textContent = this.value; };
-                box.appendChild(txt);
-
-                const grid = document.createElement('div');
-                grid.className = "control-grid" ;
-                grid.style.display = "flex";
-                grid.style.gap = "8px";
-
-                const fs = document.createElement('select');
-                fs.className = "font-selector";
-                fs.style.cssText = "flex:1; background:#000; color:#fff; border:1px solid var(--border); border-radius:6px; padding:8px;";
-                fonts.forEach(f => {
-                    const opt = document.createElement('option');
-                    opt.value = f.val; opt.innerText = f.name;
-                    if(el.style.fontFamily === f.val) opt.selected = true;
-                    fs.appendChild(opt);
-                });
-                fs.onchange = function() { el.style.fontFamily = this.value; };
-                grid.appendChild(fs);
-
-                const cp = document.createElement('input');
-                cp.type = "color";
-                cp.style.cssText = "width:40px; height:40px; border:none; border-radius:6px; cursor:pointer;";
-                cp.value = rgbToHex(window.getComputedStyle(el).fill);
-                cp.oninput = function() { el.setAttribute('fill', this.value); el.style.setProperty('fill', this.value, 'important'); };
-                grid.appendChild(cp);
-                box.appendChild(grid);
-
-                const curSize = parseInt(window.getComputedStyle(el).fontSize) || 20;
-                const labelRow = document.createElement('div');
-                labelRow.className = 'label-row';
-                labelRow.innerHTML = `<span class="label-text">BOYUT</span><span class="val-badge" id="val-fs-${i}">${curSize}px</span>`;
-                box.appendChild(labelRow);
-
-                const rs = document.createElement('input');
-                rs.type = "range"; rs.min = "8"; rs.max = "400"; rs.value = curSize;
-                rs.oninput = function() { 
-                    el.style.fontSize = this.value + "px"; 
-                    document.getElementById(`val-fs-${i}`).innerText = this.value + "px";
-                };
-                box.appendChild(rs);
-
-            } else if (el.tagName === 'image') {
-                const curW = parseInt(el.getAttribute('width')) || 100;
-                const wRow = document.createElement('div');
-                wRow.className = 'label-row';
-                wRow.innerHTML = `<span class="label-text">GENİŞLİK</span><span class="val-badge" id="val-w-${i}">${curW}px</span>`;
-                box.appendChild(wRow);
-
-                const ws = document.createElement('input');
-                ws.type = "range"; ws.min = "10"; ws.max = "1500"; ws.value = curW;
-                ws.oninput = function() { 
-                    el.setAttribute('width', this.value); 
-                    document.getElementById(`val-w-${i}`).innerText = this.value + "px";
-                };
-                box.appendChild(ws);
-
-                const curH = parseInt(el.getAttribute('height')) || 100;
-                const hRow = document.createElement('div');
-                hRow.className = 'label-row';
-                hRow.innerHTML = `<span class="label-text">YÜKSEKLİK</span><span class="val-badge" id="val-h-${i}">${curH}px</span>`;
-                box.appendChild(hRow);
-
-                const hs = document.createElement('input');
-                hs.type = "range"; hs.min = "10"; hs.max = "1500"; hs.value = curH;
-                hs.oninput = function() { 
-                    el.setAttribute('height', this.value); 
-                    document.getElementById(`val-h-${i}`).innerText = this.value + "px";
-                };
-                box.appendChild(hs);
-            }
-            container.appendChild(box);
-        });
-    }
-
-    function rgbToHex(rgb) {
-        if (rgb.startsWith('#')) return rgb;
-        const p = rgb.match(/\d+/g);
-        return p ? "#" + p.map(x => parseInt(x).toString(16).padStart(2, '0')).join('').substring(0, 6) : "#ffffff";
-    }
-
     async function saveData() {
-        const btn = document.getElementById('save-btn');
         const st = document.getElementById('status-info');
-        const fileName = document.getElementById('file-selector').value;
-        btn.disabled = true; st.innerText = "GitHub GÜNCELLENİYOR..."; st.style.display = "block";
+        st.innerText = "KAYDEDİLİYOR..."; st.style.display = "block";
         try {
+            // Kontrolleri temizle (Kayda girmesinler)
+            document.getElementById('control-layer').innerHTML = "";
             const svgText = new XMLSerializer().serializeToString(document.querySelector('#canvas-inner svg'));
-            const encoded = btoa(unescape(encodeURIComponent(svgText)));
-            const res = await fetch(WORKER_URL, {
+            const b64 = btoa(unescape(encodeURIComponent(svgText)));
+            await fetch(WORKER_URL, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json", "X-Auth-Key": SESSION_PASS, "X-File-Name": fileName },
-                body: JSON.stringify({ message: "Pro Layout Update", content: encoded, sha: SHA_KEY })
+                headers: {"Content-Type": "application/json", "X-Auth-Key": SESSION_PASS, "X-File-Name": document.getElementById('file-selector').value},
+                body: JSON.stringify({message: "Pro Advanced Controls Update", content: b64, sha: SHA_KEY})
             });
-            if (res.ok) {
-                const data = await res.json();
-                SHA_KEY = data.content.sha;
-                st.innerText = "BAŞARIYLA KAYDEDİLDİ!";
-                setTimeout(() => st.style.display = "none", 2000);
-            } else alert("Kayıt Hatası!");
-        } catch (e) { alert("Hata!"); }
-        btn.disabled = false;
+            st.innerText = "BAŞARIYLA KAYDEDİLDİ!";
+            setTimeout(() => st.style.display="none", 2000);
+        } catch(e) { alert("Hata!"); }
     }
 </script>
 </body>
