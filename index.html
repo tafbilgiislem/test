@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SVG Pro Editor | Akıllı Hizalama</title>
+    <title>SVG Pro Editor | Ultra Hizalama</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Montserrat:wght@800&family=Poppins:wght@700&family=Oswald:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --snap: #a855f7; }
+        :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --snap: #a855f7; --center-snap: #3b82f6; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
+        /* Giriş ve Panel Stilleri (Aynı Kaldı) */
         #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 10000; }
         .login-card { background: var(--panel); padding: 40px; border-radius: 16px; width: 90%; max-width: 380px; text-align: center; border: 1px solid var(--border); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
         .login-card input { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 10px; border: 1px solid var(--border); background: #0f172a; color: white; font-size: 16px; text-align: center; }
@@ -41,8 +42,9 @@
         #svg-wrapper { background: white; box-shadow: 0 0 40px rgba(0,0,0,0.6); line-height: 0; position: relative; }
         svg { max-width: 100%; height: auto; display: block; overflow: visible; }
         
-        /* Hizalama Çizgileri Stili */
+        /* Hizalama Çizgileri Stilleri */
         .guide-line { stroke: var(--snap); stroke-width: 1; stroke-dasharray: 4; pointer-events: none; }
+        .center-line { stroke: var(--center-snap); stroke-width: 1.5; stroke-dasharray: none; pointer-events: none; }
 
         #status-info { position: fixed; top: 0; width: 100%; background: var(--accent); color: white; text-align: center; padding: 8px; font-weight: bold; z-index: 11000; display: none; }
     </style>
@@ -83,12 +85,12 @@
 </div>
 
 <script>
-    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev/"; 
+    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev/"; // URL'nizi buraya yazın
     let SHA_KEY = "";
     let SESSION_PASS = "";
     let selectedElement = null;
     let offset = { x: 0, y: 0 };
-    const SNAP_THRESHOLD = 5; // Kaç piksel kala yapışsın?
+    const SNAP_THRESHOLD = 8; // Yapışma hassasiyeti (piksel)
 
     const fonts = [
         { name: "Varsayılan", val: "inherit" },
@@ -96,7 +98,6 @@
         { name: "Montserrat", val: "'Montserrat', sans-serif" },
         { name: "Poppins", val: "'Poppins', sans-serif" },
         { name: "Oswald", val: "'Oswald', sans-serif" },
-        { name: "Playfair Display", val: "'Playfair Display', serif" },
         { name: "Arial", val: "Arial, sans-serif" }
     ];
 
@@ -121,7 +122,6 @@
             document.getElementById('app-container').style.display = "flex";
             document.getElementById('canvas-inner').innerHTML = decodeURIComponent(escape(atob(data.content)));
             
-            // Guide layer boyutunu asıl SVG ile eşitle
             const mainSvg = document.querySelector('#canvas-inner svg');
             const guideLayer = document.getElementById('guide-layer');
             guideLayer.setAttribute("viewBox", mainSvg.getAttribute("viewBox"));
@@ -135,6 +135,9 @@
     function initDragAndDrop() {
         const svg = document.querySelector('#canvas-inner svg');
         const guideLayer = document.getElementById('guide-layer');
+        const viewBox = svg.viewBox.baseVal;
+        const centerX = viewBox.width / 2;
+        const centerY = viewBox.height / 2;
 
         const start = (e) => {
             const t = e.target.closest('.duzenlenebilir');
@@ -152,28 +155,68 @@
                 let c = getCoords(e);
                 let newX = c.x - offset.x;
                 let newY = c.y - offset.y;
-
-                // HİZALAMA MANTIĞI
-                guideLayer.innerHTML = "";
-                const others = document.querySelectorAll('.duzenlenebilir');
                 
+                const bbox = selectedElement.getBBox();
+                const width = bbox.width;
+                const height = bbox.height;
+
+                guideLayer.innerHTML = "";
+
+                // --- HİZALAMA NOKTALARI ---
+                const targetsX = [
+                    { val: newX, type: 'left' },
+                    { val: newX + width / 2, type: 'center' },
+                    { val: newX + width, type: 'right' }
+                ];
+                const targetsY = [
+                    { val: newY, type: 'top' },
+                    { val: newY + height / 2, type: 'center' },
+                    { val: newY + height, type: 'bottom' }
+                ];
+
+                // 1. Slayt Merkezi Hizalaması
+                if (Math.abs((newX + width / 2) - centerX) < SNAP_THRESHOLD) {
+                    newX = centerX - width / 2;
+                    showGuide(centerX, 0, centerX, viewBox.height, true);
+                }
+                if (Math.abs((newY + height / 2) - centerY) < SNAP_THRESHOLD) {
+                    newY = centerY - height / 2;
+                    showGuide(0, centerY, viewBox.width, centerY, true);
+                }
+
+                // 2. Diğer Objelerle Hizalama
+                const others = document.querySelectorAll('.duzenlenebilir');
                 others.forEach(other => {
                     if (other === selectedElement) return;
-                    
+                    const ob = other.getBBox();
                     const ox = parseFloat(other.getAttribute("x")) || 0;
                     const oy = parseFloat(other.getAttribute("y")) || 0;
 
-                    // Dikey Hizalama (X ekseni)
-                    if (Math.abs(newX - ox) < SNAP_THRESHOLD) {
-                        newX = ox;
-                        showGuide(ox, -2000, ox, 2000); // Dikey çizgi
-                    }
+                    // Dikey Akslar (X)
+                    const otherAxsX = [ox, ox + ob.width / 2, ox + ob.width];
+                    targetsX.forEach(t => {
+                        otherAxsX.forEach(ax => {
+                            if (Math.abs(t.val - ax) < SNAP_THRESHOLD) {
+                                if (t.type === 'left') newX = ax;
+                                if (t.type === 'center') newX = ax - width / 2;
+                                if (t.type === 'right') newX = ax - width;
+                                showGuide(ax, 0, ax, viewBox.height);
+                            }
+                        });
+                    });
 
-                    // Yatay Hizalama (Y ekseni)
-                    if (Math.abs(newY - oy) < SNAP_THRESHOLD) {
-                        newY = oy;
-                        showGuide(-2000, oy, 2000, oy); // Yatay çizgi
-                    }
+                    // Yatay Akslar (Y)
+                    const otherAxsY = [oy, oy + ob.height / 2, oy + ob.height];
+                    targetsY.forEach(t => {
+                        otherAxsY.forEach(ay => {
+                            if (Math.abs(t.val - ay) < SNAP_THRESHOLD) {
+                                if (t.type === 'top') newY = ay;
+                                if (t.type === 'center') newY = ay - height / 2;
+                                if (t.type === 'bottom') newY = ay - height;
+                                showGuide(0, ay, viewBox.width, ay);
+                            }
+                        });
+                    });
                 });
 
                 selectedElement.setAttribute("x", newX);
@@ -181,11 +224,11 @@
             }
         };
 
-        function showGuide(x1, y1, x2, y2) {
+        function showGuide(x1, y1, x2, y2, isCenter = false) {
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line.setAttribute("x1", x1); line.setAttribute("y1", y1);
             line.setAttribute("x2", x2); line.setAttribute("y2", y2);
-            line.classList.add("guide-line");
+            line.classList.add(isCenter ? "center-line" : "guide-line");
             guideLayer.appendChild(line);
         }
 
@@ -244,7 +287,7 @@
             const res = await fetch(WORKER_URL, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json", "X-Auth-Key": SESSION_PASS, "X-File-Name": fileName },
-                body: JSON.stringify({ message: "Snap Alignment Update", content: encoded, sha: SHA_KEY })
+                body: JSON.stringify({ message: "Ultra Alignment Update", content: encoded, sha: SHA_KEY })
             });
             if (res.ok) {
                 const data = await res.json();
