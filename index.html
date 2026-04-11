@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SVG Pro Editor | Garantili Sürüm</title>
+    <title>SVG Pro Editor | Özel Kontrol Sürümü</title>
     <style>
         :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; }
         * { box-sizing: border-box; touch-action: auto; }
         body { margin: 0; font-family: sans-serif; background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* Giriş Paneli */
+        /* Giriş Ekranı */
         #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 10000; }
         .login-card { background: var(--panel); padding: 30px; border-radius: 16px; width: 320px; text-align: center; border: 1px solid var(--border); }
         .login-card input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--border); background: #000; color: #fff; text-align: center; }
@@ -18,27 +18,29 @@
         #app-container { display: none; height: 100vh; flex-direction: row; width: 100%; }
         @media (max-width: 1023px) { #app-container { flex-direction: column; } }
 
-        /* Sidebar */
-        #sidebar { width: 350px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+        /* Sidebar & Editor */
+        #sidebar { width: 360px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
         @media (max-width: 1023px) { #sidebar { width: 100%; height: 50%; order: 2; border-top: 1px solid var(--border); } }
         
-        #editor-fields { flex: 1; overflow-y: auto; padding: 15px; }
+        #editor-fields { flex: 1; overflow-y: auto; padding: 15px; background: rgba(0,0,0,0.2); }
         .sidebar-nav { padding: 12px; background: #111827; border-bottom: 1px solid var(--border); }
 
-        /* Ön İzleme Alanı */
-        #main-view { flex: 1; background: #020617; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 20px; position: relative; }
-        #svg-wrapper { position: relative; background: white; max-width: 100%; max-height: 100%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 40px black; }
-        #canvas-inner svg { display: block; width: auto; height: auto; max-width: 100%; max-height: 80vh; }
+        /* Ön İzleme Alanı - Ekrana Sığacak Şekilde Büyütüldü */
+        #main-view { flex: 1; background: #020617; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 10px; position: relative; }
+        #svg-wrapper { position: relative; background: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 50px black; }
+        #canvas-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        #canvas-inner svg { width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; }
 
+        /* Kontroller */
         .duzenlenebilir { cursor: move; pointer-events: all; }
-        .active-element { stroke: #3b82f6 !important; stroke-width: 2px !important; stroke-dasharray: 5,5; }
-
-        .field-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 12px; position: relative; }
-        .delete-btn { position: absolute; right: 10px; top: 10px; color: #ef4444; cursor: pointer; font-weight: bold; font-size: 18px; }
+        .field-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; }
+        .delete-btn { position: absolute; right: 12px; top: 12px; color: #ef4444; cursor: pointer; font-weight: bold; font-size: 20px; }
         #status-info { position: fixed; top: 0; width: 100%; background: var(--accent); text-align: center; padding: 10px; z-index: 11000; display: none; font-weight: bold; }
         
-        label { font-size: 10px; color: #94a3b8; font-weight: bold; display: block; margin-top: 10px; }
-        input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+        .label-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 4px; }
+        .label-text { font-size: 11px; color: #94a3b8; font-weight: bold; text-transform: uppercase; }
+        .value-badge { background: #0f172a; color: var(--accent); font-size: 11px; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 6px; }
     </style>
 </head>
 <body>
@@ -78,10 +80,10 @@
 </div>
 
 <script>
-    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev"; // GÜNCELLEYİN
+    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev"; // URL'NİZİ BURAYA YAZIN
     let SHA_KEY = "", SESSION_PASS = "", selectedEl = null, offset = {x:0, y:0};
 
-    // Renk formatı düzeltici
+    // Renk formatı düzeltici (#333 -> #333333)
     function safeColor(color) {
         if (!color) return "#ffffff";
         if (color.length === 4) return "#" + color[1] + color[1] + color[2] + color[2] + color[3] + color[3];
@@ -107,20 +109,16 @@
             document.getElementById('app-container').style.display = "flex";
             document.getElementById('canvas-inner').innerHTML = decodeURIComponent(escape(atob(data.content)));
             
-            setupEditor();
+            initEditor();
             st.style.display = "none";
         } catch(e) { alert("Hata!"); st.style.display="none"; }
     }
 
-    function setupEditor() {
+    function initEditor() {
         const svg = document.querySelector('#canvas-inner svg');
         if (!svg) return;
 
-        svg.querySelectorAll('text, image').forEach(el => {
-            if(!el.id) el.id = "el_" + Math.random().toString(36).substr(2,9);
-            el.classList.add('duzenlenebilir');
-        });
-
+        // Sadece sınıfı "duzenlenebilir" olanları veya yeni eklenenleri bulur
         initDragging(svg);
         renderFields();
     }
@@ -141,11 +139,6 @@
                 const p = getCoords(e);
                 offset.x = p.x - (parseFloat(el.getAttribute("x")) || 0);
                 offset.y = p.y - (parseFloat(el.getAttribute("y")) || 0);
-                
-                // Sidebar'da ilgili kutuya odaklan (isteğe bağlı)
-                document.querySelectorAll('.field-box').forEach(b => b.style.borderColor = "#334155");
-                const box = document.getElementById('box-' + el.id);
-                if(box) box.style.borderColor = "#3b82f6";
             }
         };
 
@@ -158,7 +151,7 @@
 
         window.onmouseup = () => { selectedEl = null; };
         
-        // Mobil dokunmatik desteği
+        // Mobil dokunmatik
         svg.ontouchstart = (e) => svg.onmousedown(e.touches[0]);
         window.ontouchmove = (e) => window.onmousemove(e.touches[0]);
         window.ontouchend = () => window.onmouseup();
@@ -167,35 +160,37 @@
     function renderFields() {
         const f = document.getElementById('editor-fields');
         f.innerHTML = "";
+        
+        // SADECE "duzenlenebilir" sınıfına sahip öğeleri bulur (İlk halindeki gibi)
         document.querySelectorAll('.duzenlenebilir').forEach((el, i) => {
             const b = document.createElement('div');
             b.className = 'field-box';
-            b.id = 'box-' + el.id;
             const col = el.getAttribute('fill') || el.style.fill || "#ffffff";
             
-            let controls = `
-                <span class="delete-btn" onclick="document.getElementById('${el.id}').remove(); renderFields();">×</span>
-                <div style="font-size:10px; color:#3b82f6; font-weight:bold;">${el.tagName.toUpperCase()} #${i+1}</div>
-            `;
+            let content = `<span class="delete-btn" onclick="document.getElementById('${el.id}').remove(); renderFields();">×</span>`;
+            content += `<div style="font-size:10px; color:#3b82f6; font-weight:bold;">${el.tagName.toUpperCase()} #${i+1}</div>`;
 
             if (el.tagName === 'text') {
                 const fs = parseInt(window.getComputedStyle(el).fontSize) || 40;
-                controls += `
-                    <input type="text" value="${el.textContent}" oninput="document.getElementById('${el.id}').textContent=this.value" style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #444; margin-top:5px;">
-                    <label>YAZI BOYUTU</label>
-                    <input type="range" min="10" max="300" value="${fs}" oninput="document.getElementById('${el.id}').style.fontSize=this.value+'px'; document.getElementById('${el.id}').setAttribute('font-size', this.value);">
-                    <label>RENK</label>
-                    <input type="color" value="${safeColor(col)}" oninput="const t=document.getElementById('${el.id}'); t.setAttribute('fill', this.value); t.style.fill=this.value;">
+                content += `
+                    <input type="text" value="${el.textContent}" oninput="document.getElementById('${el.id}').textContent=this.value" style="width:100%; padding:10px; background:#000; color:#fff; border:1px solid #444; margin-top:8px; border-radius:6px;">
+                    <div class="label-row"><span class="label-text">YAZI BOYUTU</span><span class="value-badge" id="val-fs-${i}">${fs}px</span></div>
+                    <input type="range" min="10" max="400" value="${fs}" oninput="document.getElementById('${el.id}').style.fontSize=this.value+'px'; document.getElementById('${el.id}').setAttribute('font-size', this.value); document.getElementById('val-fs-${i}').innerText=this.value+'px';">
+                    <div class="label-row"><span class="label-text">RENK</span></div>
+                    <input type="color" value="${safeColor(col)}" oninput="const t=document.getElementById('${el.id}'); t.setAttribute('fill', this.value); t.style.fill=this.value;" style="width:50px; height:45px; cursor:pointer; border:none; background:none;">
                 `;
             } else {
                 const w = parseFloat(el.getAttribute("width")) || 200;
-                controls += `
-                    <label>RESİM GENİŞLİĞİ</label>
-                    <input type="range" min="20" max="1500" value="${w}" oninput="document.getElementById('${el.id}').setAttribute('width', this.value); document.getElementById('${el.id}').setAttribute('height', this.value);">
+                const h = parseFloat(el.getAttribute("height")) || 200;
+                content += `
+                    <div class="label-row"><span class="label-text">GENİŞLİK</span><span class="value-badge" id="val-w-${i}">${Math.round(w)}px</span></div>
+                    <input type="range" min="10" max="1800" value="${w}" oninput="document.getElementById('${el.id}').setAttribute('width', this.value); document.getElementById('val-w-${i}').innerText=Math.round(this.value)+'px';">
+                    <div class="label-row"><span class="label-text">YÜKSEKLİK</span><span class="value-badge" id="val-h-${i}">${Math.round(h)}px</span></div>
+                    <input type="range" min="10" max="1800" value="${h}" oninput="document.getElementById('${el.id}').setAttribute('height', this.value); document.getElementById('val-h-${i}').innerText=Math.round(this.value)+'px';">
                 `;
             }
             
-            b.innerHTML = controls;
+            b.innerHTML = content;
             f.appendChild(b);
         });
     }
@@ -203,8 +198,9 @@
     function addNewText() {
         const svg = document.querySelector('#canvas-inner svg');
         const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        t.id = "t" + Date.now(); t.classList.add('duzenlenebilir');
-        t.setAttribute("x", 100); t.setAttribute("y", 200); t.setAttribute("fill", "#ffffff");
+        t.id = "t" + Date.now(); 
+        t.setAttribute("class", "duzenlenebilir"); // ÖNEMLİ: Sınıf eklendi, böylece kayıttan sonra da bulunur.
+        t.setAttribute("x", 200); t.setAttribute("y", 200); t.setAttribute("fill", "#000000");
         t.style.fontSize = "60px"; t.textContent = "YENİ METİN";
         svg.appendChild(t); renderFields();
     }
@@ -215,8 +211,9 @@
         reader.onload = (e) => {
             const svg = document.querySelector('#canvas-inner svg');
             const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
-            img.id = "i" + Date.now(); img.classList.add('duzenlenebilir');
-            img.setAttribute("x", 50); img.setAttribute("y", 50);
+            img.id = "i" + Date.now(); 
+            img.setAttribute("class", "duzenlenebilir"); // ÖNEMLİ: Sınıf eklendi.
+            img.setAttribute("x", 100); img.setAttribute("y", 100);
             img.setAttribute("width", 300); img.setAttribute("height", 300);
             img.setAttributeNS("http://www.w3.org/1999/xlink", "href", e.target.result);
             svg.appendChild(img); renderFields();
@@ -233,11 +230,11 @@
             await fetch(WORKER_URL, {
                 method: "PUT",
                 headers: {"Content-Type": "application/json", "X-Auth-Key": SESSION_PASS, "X-File-Name": document.getElementById('file-selector').value},
-                body: JSON.stringify({message: "Slider Update", content: b64, sha: SHA_KEY})
+                body: JSON.stringify({message: "Pro Update", content: b64, sha: SHA_KEY})
             });
             st.innerText = "BAŞARIYLA KAYDEDİLDİ!";
             setTimeout(() => st.style.display="none", 2000);
-        } catch(e) { alert("Hata!"); }
+        } catch(e) { alert("Kayıt Hatası!"); }
     }
 </script>
 </body>
