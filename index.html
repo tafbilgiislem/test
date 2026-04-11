@@ -3,26 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SVG Pro Editor | Metin & Köşe Düzeltmesi</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Montserrat:wght@800&family=Poppins:wght@700&display=swap" rel="stylesheet">
+    <title>SVG Pro Editor | Font Destekli Final Sürüm</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;700;800&family=Nunito:wght@400;700&family=Open+Sans:wght@400;700&family=Oswald:wght@400;700&family=Pacifico&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;700&family=Raleway:wght@400;700&family=Roboto:wght@400;700&family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --handle-move: #3b82f6; --handle-rotate: #f59e0b; --handle-radius: #ec4899; }
         
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
+        /* Kusursuz Mobil Scroll Yerleşimi */
         html, body { margin: 0; padding: 0; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; background: var(--bg); color: white; font-family: 'Inter', sans-serif; overscroll-behavior-y: none; }
 
         #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 10000; }
         .login-card { background: var(--panel); padding: 40px; border-radius: 20px; width: 340px; text-align: center; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .login-card h2 { margin-top: 0; color: #f8fafc; }
         .login-card input { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 10px; border: 1px solid var(--border); background: #000; color: #fff; text-align: center; font-size: 16px; outline: none; }
         .login-card button { width: 100%; padding: 14px; background: var(--accent); border: none; color: white; font-weight: bold; border-radius: 10px; cursor: pointer; transition: 0.2s; }
         .login-card button:hover { opacity: 0.9; }
 
         #app-container { display: none; height: 100%; width: 100%; flex-direction: row; }
         
+        /* PC Düzeni */
         #sidebar { width: 360px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; height: 100%; z-index: 100; }
         #main-view { flex: 1; background: #020617; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 15px; position: relative; height: 100%; touch-action: none; }
 
+        /* MOBİL & TABLET DÜZENİ */
         @media (max-width: 1023px) { 
             #app-container { flex-direction: column; }
             #sidebar { width: 100%; height: 50%; border-top: 1px solid var(--border); border-left: none; order: 2; }
@@ -30,12 +34,16 @@
         }
         
         .sidebar-nav { padding: 15px; background: #111827; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        
+        /* EDİTÖR PANELİ: Sadece dikey kaydırmaya izin ver */
         #editor-fields { flex: 1; min-height: 0; overflow-y: auto; padding: 15px; background: rgba(0,0,0,0.2); padding-bottom: 80px; touch-action: pan-y; }
 
+        /* ÇİZİM ALANI */
         #svg-wrapper { position: relative; background: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 50px black; touch-action: none; }
         #canvas-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
         #canvas-inner svg { width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; overflow: visible; }
 
+        /* TUTAMAÇLAR VE ETKİLEŞİM */
         .duzenlenebilir { cursor: move; pointer-events: all; }
         #control-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; overflow: visible; }
         
@@ -45,17 +53,20 @@
         .handle-rotate { stroke: var(--handle-rotate); cursor: crosshair; fill: var(--handle-rotate); }
         .handle-radius { stroke: var(--handle-radius); cursor: ns-resize; fill: var(--handle-radius); }
 
+        /* ARAYÜZ (UI) ÖĞELERİ */
         .field-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; border-left: 4px solid transparent; transition: 0.3s; }
         .field-box.active { border-left-color: var(--accent); background: rgba(16, 185, 129, 0.05); }
         .delete-btn { position: absolute; right: 12px; top: 12px; color: #ef4444; cursor: pointer; font-weight: bold; font-size: 20px; }
         
-        .tool-title { font-size: 13px; color: #f8fafc; font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid var(--border); padding-top: 15px; }
         .label-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 4px; }
         .label-text { font-size: 11px; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px; }
         .value-badge { background: #0f172a; color: var(--accent); font-size: 11px; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
         
         input[type="range"] { width: 100%; accent-color: var(--accent); height: 6px; cursor: pointer; }
         input[type="text"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #000; color: #fff; margin-bottom: 10px; margin-top: 5px; outline: none; }
+        
+        /* Font Seçici Tasarımı */
+        .font-select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #000; color: #fff; margin-bottom: 10px; outline: none; font-size: 14px; cursor: pointer; appearance: none; }
         
         #status-info { position: fixed; top: 0; width: 100%; background: var(--accent); text-align: center; padding: 10px; z-index: 11000; display: none; font-weight: bold; letter-spacing: 1px;}
     </style>
@@ -99,20 +110,37 @@
 </div>
 
 <script>
-    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev"; // Lütfen GITHUB/WORKER URL'nizi buraya yapıştırın.
+    // === DEĞİŞKENLER VE GITHUB/WORKER URL ===
+    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev"; // Gerçek bağlantınız
     let SHA_KEY = "", SESSION_PASS = "";
     let selectedEl = null, resizingEl = null, rotatingEl = null, radiusingEl = null, activeHandle = null;
     let offset = {x:0, y:0}, startP = {x:0, y:0}, startData = {};
 
-    window.updateEditorUI = null;
+    // POPÜLER GOOGLE FONTLARI LİSTESİ
+    const googleFonts = [
+        { name: "Varsayılan", val: "sans-serif" },
+        { name: "Roboto", val: "'Roboto', sans-serif" },
+        { name: "Montserrat", val: "'Montserrat', sans-serif" },
+        { name: "Poppins", val: "'Poppins', sans-serif" },
+        { name: "Open Sans", val: "'Open Sans', sans-serif" },
+        { name: "Lato", val: "'Lato', sans-serif" },
+        { name: "Raleway", val: "'Raleway', sans-serif" },
+        { name: "Ubuntu", val: "'Ubuntu', sans-serif" },
+        { name: "Oswald", val: "'Oswald', sans-serif" },
+        { name: "Playfair Display", val: "'Playfair Display', serif" },
+        { name: "Merriweather", val: "'Merriweather', serif" },
+        { name: "Nunito", val: "'Nunito', sans-serif" },
+        { name: "Pacifico", val: "'Pacifico', cursive" }
+    ];
 
-    // === GİRİŞ ===
+    // === GİRİŞ VE YÜKLEME İŞLEMLERİ ===
     const login = async () => {
         const passVal = document.getElementById('passInput').value;
         if(!passVal) { alert("Şifre girin!"); return; }
         SESSION_PASS = passVal;
         await loadSlide();
     };
+
     document.getElementById('loginBtn').addEventListener('click', login);
     document.getElementById('passInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') login(); });
     document.getElementById('file-selector').addEventListener('change', loadSlide);
@@ -138,7 +166,7 @@
         } catch(e) { alert("Bağlantı Hatası!"); st.style.display="none"; }
     }
 
-    // === INKSCAPE BEZIER ALGORİTMASI ===
+    // === INKSCAPE BEZIER KÖŞE YUMUŞATMA ===
     function describeRoundedRect(r, s, x, y, w, h) {
         if (r <= 0) return `M ${x} ${y} H ${x + w} V ${y + h} H ${x} Z`;
         r = Math.min(r, w / 2, h / 2); 
@@ -216,7 +244,7 @@
         renderFields();
     }
 
-    // === PRO EDİTÖR MOTORU ===
+    // === PRO EDİTÖR MOTORU (4 Köşe, Rotate, Radius) ===
     function initEngine(svg) {
         const wrapper = document.getElementById('svg-wrapper');
         const ctrl = document.getElementById('control-layer');
@@ -235,7 +263,8 @@
             const target = e.target;
 
             if (target.classList.contains('handle')) {
-                const el = document.getElementById(target.dataset.id);
+                const elId = target.dataset.id;
+                const el = document.getElementById(elId);
                 if (!el) return;
 
                 startP = p;
@@ -297,7 +326,7 @@
                 } else {
                     const ns = Math.max(5, startData.fontSize + dx/2);
                     resizingEl.style.fontSize = ns + "px"; 
-                    resizingEl.setAttribute("font-size", ns); // Garanti Kayıt Özelliği
+                    resizingEl.setAttribute("font-size", ns);
                 }
                 updateUI(resizingEl); syncSliders(resizingEl);
             } 
@@ -330,7 +359,7 @@
         window.onpointerup = release;
         window.onpointercancel = release;
 
-        // === SEÇİM KUTUSU ÇİZİMİ ===
+        // SEÇİM KUTUSU ÇİZİMİ
         function updateUI(el) {
             ctrl.innerHTML = "";
             const b = el.getBBox();
@@ -340,7 +369,6 @@
             g.setAttribute("transform", transform);
             ctrl.appendChild(g);
 
-            // Çerçeve (Resimse Bezier, Metinse Kare)
             if (el.tagName === 'image') {
                 const rPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 const currentRx = parseFloat(el.dataset.rx) || 0;
@@ -362,7 +390,6 @@
 
             const s = 24; 
 
-            // 4 Köşe
             const corners = [
                 { id: 'tl', x: b.x, y: b.y, cur: 'nwse-resize' }, 
                 { id: 'tr', x: b.x + b.width, y: b.y, cur: 'nesw-resize' },
@@ -379,7 +406,6 @@
             });
 
             if (el.tagName === "image") {
-                // Döndürme Tutamacı
                 const rotY = b.y - 40;
                 const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 line.setAttribute("x1", b.x + b.width / 2); line.setAttribute("y1", b.y);
@@ -393,7 +419,6 @@
                 rotH.setAttribute("class", "handle handle-rotate"); rotH.dataset.id = el.id;
                 g.appendChild(rotH);
 
-                // Köşe Yumuşatma Tutamacı (Aşağı hareket eder)
                 const currentRx = parseFloat(el.dataset.rx) || 0;
                 const radH = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 radH.setAttribute("cx", b.x + b.width); 
@@ -406,7 +431,7 @@
         window.updateEditorUI = updateUI; 
     }
 
-    // === SİDEBAR ===
+    // === SİDEBAR SENKRONİZASYONU VE ARAYÜZÜ ===
     function syncSliders(el) {
         const i = Array.from(document.querySelectorAll('.duzenlenebilir')).indexOf(el);
         if (i === -1) return;
@@ -445,10 +470,25 @@
 
             if (el.tagName === 'text') {
                 const fs = parseFloat(el.getAttribute("font-size")) || parseInt(window.getComputedStyle(el).fontSize) || 60;
+                
+                // FONT SEÇİCİ (GOOGLE FONTLARI)
+                const currentFont = el.getAttribute("font-family") || window.getComputedStyle(el).fontFamily || "sans-serif";
+                let fontOptions = googleFonts.map(f => {
+                    const isSelected = currentFont.includes(f.name) || (f.name === "Varsayılan" && currentFont === "sans-serif") ? "selected" : "";
+                    return `<option value="${f.val}" style="font-family: ${f.val}" ${isSelected}>${f.name}</option>`;
+                }).join('');
+
                 html += `
                     <input type="text" value="${el.textContent}" oninput="document.getElementById('${el.id}').textContent=this.value" style="width:100%; padding:12px; background:#000; color:#fff; border:1px solid #444; border-radius:8px; margin-top:8px;">
+                    
+                    <div class="label-row"><span class="label-text">YAZI TİPİ (FONT)</span></div>
+                    <select class="font-select" onchange="const t=document.getElementById('${el.id}'); t.setAttribute('font-family', this.value); t.style.fontFamily=this.value;">
+                        ${fontOptions}
+                    </select>
+
                     <div class="label-row"><span class="label-text">YAZI BOYUTU</span><span class="value-badge" id="val-fs-${i}">${fs}px</span></div>
                     <input type="range" id="fs-slider-${i}" min="10" max="600" value="${fs}" oninput="document.getElementById('${el.id}').style.fontSize=this.value+'px'; document.getElementById('${el.id}').setAttribute('font-size', this.value); document.getElementById('val-fs-${i}').innerText=this.value+'px'; if(window.updateEditorUI) window.updateEditorUI(document.getElementById('${el.id}'));">
+                    
                     <div class="label-row"><span class="label-text">RENK</span></div>
                     <input type="color" value="${safeColor(col)}" oninput="const t=document.getElementById('${el.id}'); t.setAttribute('fill', this.value); t.style.fill=this.value;" style="width:50px; height:45px; cursor:pointer; border:none; background:none;">
                 `;
@@ -487,7 +527,6 @@
     document.getElementById('addImgBtn').onclick = () => document.getElementById('img-in').click();
     document.getElementById('img-in').onchange = (e) => addNewImage(e.target);
 
-    // KESİN ÇÖZÜM: Metinler artık BEYAZ ve tam ORTADA, kaybolmasını engelleyen attributelar ile eklendi
     function addNewText() {
         const svg = document.querySelector('#canvas-inner svg');
         if(!svg) return;
@@ -500,8 +539,9 @@
         t.setAttribute("class", "duzenlenebilir");
         t.setAttribute("x", cx); 
         t.setAttribute("y", cy); 
-        t.setAttribute("fill", "#ffffff"); // Koyuda kaybolmasın diye beyaz
-        t.setAttribute("font-size", "80"); // Özellik garantisi
+        t.setAttribute("fill", "#ffffff"); 
+        t.setAttribute("font-size", "80"); 
+        t.setAttribute("font-family", "sans-serif"); // Varsayılan font
         t.style.fontSize = "80px"; 
         t.style.fontFamily = "sans-serif"; 
         t.textContent = "YENİ METİN";
@@ -536,13 +576,13 @@
         const st = document.getElementById('status-info');
         st.innerText = "KAYDEDİLİYOR..."; st.style.display = "block";
         try {
-            document.getElementById('control-layer').innerHTML = ""; // Kayıttan önce kutuyu temizle
+            document.getElementById('control-layer').innerHTML = ""; // Çerçeveyi temizle
             const svgText = new XMLSerializer().serializeToString(document.querySelector('#canvas-inner svg'));
             const b64 = btoa(unescape(encodeURIComponent(svgText)));
             await fetch(WORKER_URL, {
                 method: "PUT",
                 headers: {"X-Auth-Key": SESSION_PASS, "X-File-Name": document.getElementById('file-selector').value},
-                body: JSON.stringify({message: "Pro Text & Bezier Fix", content: b64, sha: SHA_KEY})
+                body: JSON.stringify({message: "Font Feature Added", content: b64, sha: SHA_KEY})
             });
             st.innerText = "BAŞARIYLA KAYDEDİLDİ!";
             setTimeout(() => st.style.display="none", 2000);
