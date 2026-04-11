@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SVG Pro Editor | Inkscape Style Resize</title>
+    <title>SVG Pro Editor | 4 Köşe Resize</title>
     <style>
         :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --handle: #3b82f6; }
         * { box-sizing: border-box; touch-action: none; }
@@ -31,7 +31,7 @@
 
         /* Kontroller & handles */
         .duzenlenebilir { cursor: move; pointer-events: all; }
-        .resize-handle { fill: white; stroke: var(--handle); stroke-width: 2; cursor: nwse-resize; pointer-events: all; }
+        .resize-handle { fill: white; stroke: var(--handle); stroke-width: 2; pointer-events: all; z-index: 60; }
         #control-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
 
         .field-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; }
@@ -83,7 +83,7 @@
 
 <script>
     const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev"; // URL GÜNCELLEYİN
-    let SHA_KEY = "", SESSION_PASS = "", selectedEl = null, resizingEl = null, offset = {x:0, y:0};
+    let SHA_KEY = "", SESSION_PASS = "", selectedEl = null, resizingEl = null, activeHandle = null, offset = {x:0, y:0};
 
     function safeColor(color) {
         if (!color) return "#ffffff";
@@ -146,176 +146,13 @@
             const p = getCoords(e);
             const target = e.target;
 
-            // Boyutlandırma tutamacına mı basıldı?
+            // Çoklu tutamaçlardan birine mi basıldı?
             if (target.classList.contains('resize-handle')) {
                 resizingEl = document.getElementById(target.dataset.id);
-                const bbox = resizingEl.getBBox();
+                activeHandle = target.dataset.handleType; // Hangi köşe? (tl, tr, bl, br)
+                
+                // Başlangıç durumunu kaydet
                 resizingEl.dataset.startX = p.x;
                 resizingEl.dataset.startY = p.y;
-                resizingEl.dataset.startW = resizingEl.tagName === "image" ? parseFloat(resizingEl.getAttribute("width")) : 0;
-                resizingEl.dataset.startH = resizingEl.tagName === "image" ? parseFloat(resizingEl.getAttribute("height")) : 0;
-                resizingEl.dataset.startSize = parseFloat(window.getComputedStyle(resizingEl).fontSize);
-                e.stopPropagation(); return;
-            }
-
-            const el = target.closest('.duzenlenebilir');
-            if (el) {
-                selectedEl = el;
-                offset.x = p.x - (parseFloat(el.getAttribute("x")) || 0);
-                offset.y = p.y - (parseFloat(el.getAttribute("y")) || 0);
-                updateUI(el);
-            } else {
-                ctrl.innerHTML = "";
-            }
-        };
-
-        const onMove = (e) => {
-            const p = getCoords(e);
-            if (resizingEl) {
-                const dx = p.x - parseFloat(resizingEl.dataset.startX);
-                const dy = p.y - parseFloat(resizingEl.dataset.startY);
-
-                if (resizingEl.tagName === "image") {
-                    const newW = Math.max(10, parseFloat(resizingEl.dataset.startW) + dx);
-                    const newH = Math.max(10, parseFloat(resizingEl.dataset.startH) + dy);
-                    resizingEl.setAttribute("width", newW);
-                    resizingEl.setAttribute("height", newH);
-                } else {
-                    const newS = Math.max(5, parseFloat(resizingEl.dataset.startSize) + dx/2);
-                    resizingEl.style.fontSize = newS + "px";
-                    resizingEl.setAttribute("font-size", newS);
-                }
-                updateUI(resizingEl);
-                syncSliders(resizingEl); // Sliderları güncelle
-            } else if (selectedEl) {
-                selectedEl.setAttribute("x", p.x - offset.x);
-                selectedEl.setAttribute("y", p.y - offset.y);
-                updateUI(selectedEl);
-            }
-        };
-
-        const onUp = () => { selectedEl = null; resizingEl = null; };
-
-        function updateUI(el) {
-            ctrl.innerHTML = "";
-            const b = el.getBBox();
-            
-            // Çerçeve
-            const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            r.setAttribute("x", b.x); r.setAttribute("y", b.y);
-            r.setAttribute("width", b.width); r.setAttribute("height", b.height);
-            r.setAttribute("fill", "none"); r.setAttribute("stroke", "#3b82f6"); r.setAttribute("stroke-width", "3");
-            ctrl.appendChild(r);
-
-            // Inkscape tarzı sağ alt tutamaç
-            const h = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            const s = 18;
-            h.setAttribute("x", b.x + b.width - s/2); h.setAttribute("y", b.y + b.height - s/2);
-            h.setAttribute("width", s); h.setAttribute("height", s);
-            h.setAttribute("class", "resize-handle"); h.dataset.id = el.id;
-            ctrl.appendChild(h);
-        }
-
-        svg.addEventListener('pointerdown', onDown);
-        window.addEventListener('pointermove', onMove);
-        window.addEventListener('pointerup', onUp);
-    }
-
-    function syncSliders(el) {
-        const i = Array.from(document.querySelectorAll('.duzenlenebilir')).indexOf(el);
-        if (i === -1) return;
-        
-        if (el.tagName === 'text') {
-            const fs = parseInt(window.getComputedStyle(el).fontSize);
-            const slider = document.getElementById(`fs-slider-${i}`);
-            const badge = document.getElementById(`val-fs-${i}`);
-            if(slider) slider.value = fs;
-            if(badge) badge.innerText = fs + "px";
-        } else {
-            const w = Math.round(parseFloat(el.getAttribute("width")));
-            const h = Math.round(parseFloat(el.getAttribute("height")));
-            const ws = document.getElementById(`w-slider-${i}`);
-            const hs = document.getElementById(`h-slider-${i}`);
-            const wb = document.getElementById(`val-w-${i}`);
-            const hb = document.getElementById(`val-h-${i}`);
-            if(ws) ws.value = w; if(wb) wb.innerText = w + "px";
-            if(hs) hs.value = h; if(hb) hb.innerText = h + "px";
-        }
-    }
-
-    function renderFields() {
-        const f = document.getElementById('editor-fields');
-        f.innerHTML = "";
-        document.querySelectorAll('.duzenlenebilir').forEach((el, i) => {
-            const b = document.createElement('div');
-            b.className = 'field-box';
-            const col = el.getAttribute('fill') || el.style.fill || "#ffffff";
-            
-            let html = `<span class="delete-btn" onclick="document.getElementById('${el.id}').remove(); renderFields();">×</span>`;
-            html += `<div style="font-size:10px; color:#3b82f6; font-weight:bold;">${el.tagName.toUpperCase()} #${i+1}</div>`;
-
-            if (el.tagName === 'text') {
-                const fs = parseInt(window.getComputedStyle(el).fontSize) || 40;
-                html += `
-                    <input type="text" value="${el.textContent}" oninput="document.getElementById('${el.id}').textContent=this.value" style="width:100%; padding:10px; background:#000; color:#fff; border:1px solid #444; margin-top:8px; border-radius:6px;">
-                    <div class="label-row"><span class="label-text">YAZI BOYUTU</span><span class="value-badge" id="val-fs-${i}">${fs}px</span></div>
-                    <input type="range" id="fs-slider-${i}" min="10" max="400" value="${fs}" oninput="document.getElementById('${el.id}').style.fontSize=this.value+'px'; document.getElementById('${el.id}').setAttribute('font-size', this.value); document.getElementById('val-fs-${i}').innerText=this.value+'px';">
-                    <div class="label-row"><span class="label-text">RENK</span></div>
-                    <input type="color" value="${safeColor(col)}" oninput="const t=document.getElementById('${el.id}'); t.setAttribute('fill', this.value); t.style.fill=this.value;" style="width:50px; height:40px; cursor:pointer; border:none; background:none;">
-                `;
-            } else {
-                const w = parseFloat(el.getAttribute("width")) || 200;
-                const h = parseFloat(el.getAttribute("height")) || 200;
-                html += `
-                    <div class="label-row"><span class="label-text">GENİŞLİK</span><span class="value-badge" id="val-w-${i}">${Math.round(w)}px</span></div>
-                    <input type="range" id="w-slider-${i}" min="10" max="1800" value="${w}" oninput="document.getElementById('${el.id}').setAttribute('width', this.value); document.getElementById('val-w-${i}').innerText=Math.round(this.value)+'px';">
-                    <div class="label-row"><span class="label-text">YÜKSEKLİK</span><span class="value-badge" id="val-h-${i}">${Math.round(h)}px</span></div>
-                    <input type="range" id="h-slider-${i}" min="10" max="1800" value="${h}" oninput="document.getElementById('${el.id}').setAttribute('height', this.value); document.getElementById('val-h-${i}').innerText=Math.round(this.value)+'px';">
-                `;
-            }
-            b.innerHTML = html; f.appendChild(b);
-        });
-    }
-
-    function addNewText() {
-        const svg = document.querySelector('#canvas-inner svg');
-        const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        t.id = "t" + Date.now(); t.setAttribute("class", "duzenlenebilir");
-        t.setAttribute("x", 200); t.setAttribute("y", 200); t.setAttribute("fill", "#000000");
-        t.style.fontSize = "60px"; t.textContent = "YENİ METİN";
-        svg.appendChild(t); renderFields();
-    }
-
-    function addNewImage(input) {
-        const file = input.files[0]; if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const svg = document.querySelector('#canvas-inner svg');
-            const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
-            img.id = "i" + Date.now(); img.setAttribute("class", "duzenlenebilir");
-            img.setAttribute("x", 100); img.setAttribute("y", 100);
-            img.setAttribute("width", 300); img.setAttribute("height", 300);
-            img.setAttributeNS("http://www.w3.org/1999/xlink", "href", e.target.result);
-            svg.appendChild(img); renderFields();
-        };
-        reader.readAsDataURL(file);
-    }
-
-    async function saveData() {
-        const st = document.getElementById('status-info');
-        st.innerText = "KAYDEDİLİYOR..."; st.style.display = "block";
-        try {
-            const svgText = new XMLSerializer().serializeToString(document.querySelector('#canvas-inner svg'));
-            const b64 = btoa(unescape(encodeURIComponent(svgText)));
-            await fetch(WORKER_URL, {
-                method: "PUT",
-                headers: {"Content-Type": "application/json", "X-Auth-Key": SESSION_PASS, "X-File-Name": document.getElementById('file-selector').value},
-                body: JSON.stringify({message: "Pro Resize Sync", content: b64, sha: SHA_KEY})
-            });
-            st.innerText = "KAYDEDİLDİ!";
-            setTimeout(() => st.style.display="none", 2000);
-        } catch(e) { alert("Hata!"); }
-    }
-</script>
-</body>
-</html>
+                resizingEl.dataset.startElX = parseFloat(resizingEl.getAttribute("x")) || 0;
+                resizingEl
