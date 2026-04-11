@@ -3,18 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SVG Pro Editor | Kusursuz Scroll & Kontrol</title>
+    <title>SVG Pro Editor | Ultimate Control</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Montserrat:wght@800&family=Poppins:wght@700&family=Oswald:wght@700&display=swap" rel="stylesheet">
     <style>
         :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --handle-move: #3b82f6; --handle-rotate: #f59e0b; --handle-radius: #ec4899; }
         
-        /* DİKKAT: touch-action: none BURADAN KALDIRILDI! */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         html, body { 
-            margin: 0; padding: 0; width: 100%; 
-            height: 100vh; height: 100dvh; /* Ekran boyutunu tam alır */
-            overflow: hidden; 
+            margin: 0; padding: 0; width: 100%; height: 100dvh; overflow: hidden; 
             background: var(--bg); color: white; font-family: 'Inter', sans-serif; 
             overscroll-behavior-y: none; 
         }
@@ -26,13 +23,9 @@
 
         #app-container { display: none; height: 100%; width: 100%; flex-direction: row; }
         
-        /* PC Düzeni */
         #sidebar { width: 360px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; height: 100%; z-index: 100; }
-        
-        /* ÇİZİM ALANI: Kaydırma iptali sadece burada geçerli! */
         #main-view { flex: 1; background: #020617; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 15px; position: relative; height: 100%; touch-action: none; }
 
-        /* Mobil & Tablet Düzeni */
         @media (max-width: 1023px) { 
             #app-container { flex-direction: column; }
             #sidebar { width: 100%; height: 50%; border-top: 1px solid var(--border); border-left: none; order: 2; }
@@ -40,30 +33,20 @@
         }
         
         .sidebar-nav { padding: 15px; background: #111827; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        #editor-fields { flex: 1; min-height: 0; overflow-y: auto; padding: 15px; background: rgba(0,0,0,0.2); padding-bottom: 80px; touch-action: pan-y; }
 
-        /* EDİTÖR LİSTESİ: Scroll sorunu düzeltildi! */
-        #editor-fields { 
-            flex: 1; 
-            min-height: 0; 
-            overflow-y: auto; 
-            padding: 15px; 
-            background: rgba(0,0,0,0.2); 
-            padding-bottom: 80px; 
-            -webkit-overflow-scrolling: touch; 
-            touch-action: pan-y; /* Sadece yukarı aşağı kaydırmaya izin ver */
-        }
-
-        #svg-wrapper { position: relative; background: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 50px black; }
+        #svg-wrapper { position: relative; background: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 50px black; touch-action: none; }
         #canvas-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
         #canvas-inner svg { width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; overflow: visible; }
 
-        /* Tutamaçlar ve Tasarım */
         .duzenlenebilir { cursor: move; pointer-events: all; }
         #control-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; overflow: visible; }
         
+        /* Tutamaç Efektleri */
         .handle { fill: white; stroke-width: 2; pointer-events: all; transition: transform 0.2s; }
+        .handle:hover { transform: scale(1.3); }
         .handle-resize { stroke: var(--handle-move); cursor: nwse-resize; }
-        .handle-rotate { stroke: var(--handle-rotate); cursor: alias; fill: var(--handle-rotate); }
+        .handle-rotate { stroke: var(--handle-rotate); cursor: crosshair; fill: var(--handle-rotate); }
         .handle-radius { stroke: var(--handle-radius); cursor: ew-resize; rx: 50%; }
 
         .field-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; border-left: 4px solid transparent; }
@@ -101,7 +84,7 @@
     
     <div id="sidebar">
         <div class="sidebar-nav">
-            <select id="file-selector" style="width:100%; padding:10px; background:#000; color:#fff; border-radius:8px; margin-bottom:10px; border:1px solid #334155; outline:none;">
+            <select id="file-selector" style="width:100%; padding:10px; background:#000; color:#fff; border-radius:8px; margin-bottom:10px; outline:none;">
                 <option value="slayt.svg">Ana Slayt</option>
                 <option value="info.svg">Kampanya</option>
                 <option value="duyuru.svg">Duyuru</option>
@@ -118,12 +101,11 @@
 </div>
 
 <script>
-    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev"; // LÜTFEN KENDİ LİNKİNİZİ YAZIN
+    const WORKER_URL = "https://githubtoken.tafbilgiislem.workers.dev"; // LÜTFEN KENDİ GITHUB/WORKER LİNKİNİZİ YAZIN
     let SHA_KEY = "", SESSION_PASS = "";
     let selectedEl = null, resizingEl = null, rotatingEl = null, radiusingEl = null, activeHandle = null;
     let offset = {x:0, y:0}, startP = {x:0, y:0}, startData = {};
 
-    // GİRİŞ İŞLEMLERİ
     const login = async () => {
         const passVal = document.getElementById('passInput').value;
         if(!passVal) { alert("Şifre girin!"); return; }
@@ -134,7 +116,6 @@
     document.getElementById('passInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') login(); });
     document.getElementById('file-selector').addEventListener('change', loadSlide);
 
-    // SLAYT YÜKLEME
     async function loadSlide() {
         const file = document.getElementById('file-selector').value;
         const st = document.getElementById('status-info');
@@ -149,7 +130,7 @@
             document.getElementById('app-container').style.display = "flex";
             document.getElementById('canvas-inner').innerHTML = decodeURIComponent(escape(atob(data.content)));
             
-            setTimeout(setupLayers, 300);
+            setTimeout(setupLayers, 200);
             st.style.display = "none";
         } catch(e) { alert("Bağlantı Hatası!"); st.style.display="none"; }
     }
@@ -171,10 +152,11 @@
         renderFields();
     }
 
-    // PRO EDİTÖR MOTORU (Pointer Events + Rotate + Radius + 4 Corner)
     function initEngine(svg) {
+        const wrapper = document.getElementById('svg-wrapper');
         const ctrl = document.getElementById('control-layer');
         
+        // Hata korumalı koordinat alıcı
         const getCoords = (e) => {
             const pt = svg.createSVGPoint();
             pt.x = e.clientX; pt.y = e.clientY;
@@ -184,20 +166,24 @@
             return { x: cursorpt.x, y: cursorpt.y };
         };
 
-        const onDown = (e) => {
+        // ÖNEMLİ: Tıklamayı svg'ye değil, wrapper'a veriyoruz (Katman çakışmasını engeller)
+        wrapper.onpointerdown = (e) => {
             const p = getCoords(e);
             const target = e.target;
 
-            // 1. Tutamaçlara Tıklanırsa
+            // 1. İşlem: Tutamaçlara tıklandıysa (Öncelik)
             if (target.classList.contains('handle')) {
-                const el = document.getElementById(target.dataset.id);
+                const elId = target.dataset.id;
+                const el = document.getElementById(elId);
+                if (!el) return;
+
                 startP = p;
                 startData = {
                     x: parseFloat(el.getAttribute("x")) || 0,
                     y: parseFloat(el.getAttribute("y")) || 0,
                     w: parseFloat(el.getAttribute("width")) || 0,
                     h: parseFloat(el.getAttribute("height")) || 0,
-                    rx: parseFloat(el.getAttribute("rx")) || 0,
+                    rx: parseFloat(el.dataset.rx || el.getAttribute("rx")) || 0,
                     fontSize: parseFloat(window.getComputedStyle(el).fontSize) || 40
                 };
 
@@ -205,11 +191,11 @@
                 else if (target.classList.contains('handle-rotate')) { rotatingEl = el; }
                 else if (target.classList.contains('handle-radius')) { radiusingEl = el; }
                 
-                try { svg.setPointerCapture(e.pointerId); } catch(err){}
-                e.stopPropagation(); return;
+                try { wrapper.setPointerCapture(e.pointerId); } catch(err){}
+                e.preventDefault(); e.stopPropagation(); return;
             }
 
-            // 2. Öğeye Tıklanırsa
+            // 2. İşlem: Düzenlenebilir nesneye tıklandıysa
             const el = target.closest('.duzenlenebilir');
             if (el) {
                 selectedEl = el;
@@ -217,28 +203,26 @@
                 offset.y = p.y - (parseFloat(el.getAttribute("y")) || 0);
                 updateUI(el);
                 
-                // Sidebar kaydırma ve vurgulama
+                // Sidebar scroll
                 document.querySelectorAll('.field-box').forEach(f => f.classList.remove('active'));
                 const box = document.getElementById('box-' + el.id);
-                if(box) {
-                    box.classList.add('active');
-                    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-                try { svg.setPointerCapture(e.pointerId); } catch(err){}
+                if(box) { box.classList.add('active'); box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+                
+                try { wrapper.setPointerCapture(e.pointerId); } catch(err){}
             } else {
-                ctrl.innerHTML = "";
+                ctrl.innerHTML = ""; // Boşluğa tıklayınca seçimi iptal et
             }
         };
 
-        const onMove = (e) => {
+        window.onpointermove = (e) => {
             if (!selectedEl && !resizingEl && !rotatingEl && !radiusingEl) return;
-            e.preventDefault(); // Sürüklerken sayfa oynamasın
+            e.preventDefault();
             const p = getCoords(e);
             const dx = p.x - startP.x;
             const dy = p.y - startP.y;
 
             if (resizingEl) {
-                // 4 Köşe Boyutlandırma
+                // 4 KÖŞE BOYUTLANDIRMA
                 let { x, y, w, h } = startData;
                 if (activeHandle === 'br') { w += dx; h += dy; }
                 else if (activeHandle === 'bl') { x += dx; w -= dx; h += dy; }
@@ -251,13 +235,14 @@
                         resizingEl.setAttribute("width", w); resizingEl.setAttribute("height", h);
                     }
                 } else {
+                    // Metin Boyutlandırma
                     const ns = Math.max(5, startData.fontSize + dx/2);
                     resizingEl.style.fontSize = ns + "px"; resizingEl.setAttribute("font-size", ns);
                 }
                 updateUI(resizingEl); syncSliders(resizingEl);
             } 
             else if (rotatingEl) {
-                // Döndürme İşlemi
+                // DÖNDÜRME (Rotate)
                 const bbox = rotatingEl.getBBox();
                 const cx = bbox.x + bbox.width / 2;
                 const cy = bbox.y + bbox.height / 2;
@@ -266,25 +251,28 @@
                 updateUI(rotatingEl);
             }
             else if (radiusingEl && radiusingEl.tagName === "image") {
-                // Köşe Yumuşatma İşlemi
+                // KÖŞE YUMUŞATMA (Modern Clip-Path Teknolojisi)
                 const newRx = Math.max(0, Math.min(startData.w/2, startData.rx + dx));
-                radiusingEl.setAttribute("rx", newRx); radiusingEl.setAttribute("ry", newRx);
+                radiusingEl.style.clipPath = `inset(0px round ${newRx}px)`;
+                radiusingEl.dataset.rx = newRx; // Veriyi geçici hafızaya yaz
                 updateUI(radiusingEl); syncSliders(radiusingEl);
             }
             else if (selectedEl) {
-                // Taşıma İşlemi
+                // TAŞIMA
                 selectedEl.setAttribute("x", p.x - offset.x);
                 selectedEl.setAttribute("y", p.y - offset.y);
                 updateUI(selectedEl);
             }
         };
 
-        const onUp = (e) => { 
-            try { svg.releasePointerCapture(e.pointerId); } catch(err){}
+        const release = (e) => { 
+            try { wrapper.releasePointerCapture(e.pointerId); } catch(err){}
             selectedEl = null; resizingEl = null; rotatingEl = null; radiusingEl = null; activeHandle = null; 
         };
+        window.onpointerup = release;
+        window.onpointercancel = release;
 
-        // Tutamaçları Ekrana Çizme
+        // --- PROFESYONEL UI ÇİZİMİ ---
         function updateUI(el) {
             ctrl.innerHTML = "";
             const b = el.getBBox();
@@ -297,12 +285,12 @@
             const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
             r.setAttribute("x", b.x); r.setAttribute("y", b.y);
             r.setAttribute("width", b.width); r.setAttribute("height", b.height);
-            r.setAttribute("fill", "none"); r.setAttribute("stroke", "var(--handle-move)"); r.setAttribute("stroke-width", "2"); r.setAttribute("stroke-dasharray", "5,5");
+            r.setAttribute("fill", "none"); r.setAttribute("stroke", "var(--handle-move)"); r.setAttribute("stroke-width", "2"); r.setAttribute("stroke-dasharray", "6,4");
             g.appendChild(r);
 
-            const s = 20; // Mobil için tutamaçları biraz daha büyüttüm
+            const s = 24; // Mobilde daha rahat tutmak için boyut büyütüldü
 
-            // 4 Köşe (Resize)
+            // 4 Köşe (Boyutlandırma)
             const corners = [
                 { id: 'tl', x: b.x, y: b.y, cur: 'nwse-resize' }, 
                 { id: 'tr', x: b.x + b.width, y: b.y, cur: 'nesw-resize' },
@@ -319,8 +307,8 @@
             });
 
             if (el.tagName === "image") {
-                // Döndürme Tutamacı (Üst)
-                const rotY = b.y - 35;
+                // Döndürme Tutamacı (Üst Orta)
+                const rotY = b.y - 45;
                 const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 line.setAttribute("x1", b.x + b.width / 2); line.setAttribute("y1", b.y);
                 line.setAttribute("x2", b.x + b.width / 2); line.setAttribute("y2", rotY);
@@ -329,26 +317,20 @@
 
                 const rotH = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 rotH.setAttribute("cx", b.x + b.width / 2); rotH.setAttribute("cy", rotY);
-                rotH.setAttribute("r", s/2);
+                rotH.setAttribute("r", s/2.5);
                 rotH.setAttribute("class", "handle handle-rotate"); rotH.dataset.id = el.id;
                 g.appendChild(rotH);
 
-                // Radius Tutamacı (Sağ Orta)
+                // Yuvarlatma Tutamacı (Sağ Orta)
                 const radH = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                radH.setAttribute("x", b.x + b.width - s/2); radH.setAttribute("y", b.y + b.height/2 - s/2);
-                radH.setAttribute("width", s); radH.setAttribute("height", s);
+                radH.setAttribute("x", b.x + b.width - s/2.5); radH.setAttribute("y", b.y + b.height/2 - s/2.5);
+                radH.setAttribute("width", s/1.2); radH.setAttribute("height", s/1.2);
                 radH.setAttribute("class", "handle handle-radius"); radH.dataset.id = el.id;
                 g.appendChild(radH);
             }
         }
-
-        svg.addEventListener('pointerdown', onDown);
-        window.addEventListener('pointermove', onMove, { passive: false }); // Ekranda kaymayı engeller
-        window.addEventListener('pointerup', onUp);
-        window.addEventListener('pointercancel', onUp);
     }
 
-    // --- SİDEBAR RENDER VE SENKRONİZASYON ---
     function syncSliders(el) {
         const i = Array.from(document.querySelectorAll('.duzenlenebilir')).indexOf(el);
         if (i === -1) return;
@@ -361,11 +343,11 @@
         } else {
             const w = Math.round(parseFloat(el.getAttribute("width")));
             const h = Math.round(parseFloat(el.getAttribute("height")));
-            const rx = Math.round(parseFloat(el.getAttribute("rx")) || 0);
-            const ws = document.getElementById(`w-slider-${i}`), hs = document.getElementById(`h-slider-${i}`), rs = document.getElementById(`r-slider-${i}`);
+            const rx = Math.round(parseFloat(el.dataset.rx) || 0); // Özel rx okuyucu
             
-            if(ws) ws.value = w; document.getElementById(`val-w-${i}`).innerText = w + "px";
-            if(hs) hs.value = h; document.getElementById(`val-h-${i}`).innerText = h + "px";
+            const ws = document.getElementById(`w-slider-${i}`), hs = document.getElementById(`h-slider-${i}`), rs = document.getElementById(`r-slider-${i}`);
+            if(ws) { ws.value = w; document.getElementById(`val-w-${i}`).innerText = w + "px"; }
+            if(hs) { hs.value = h; document.getElementById(`val-h-${i}`).innerText = h + "px"; }
             if(rs) { rs.value = rx; rs.max = w/2; document.getElementById(`val-r-${i}`).innerText = rx + "px"; }
         }
     }
@@ -384,21 +366,22 @@
             if (el.tagName === 'text') {
                 const fs = parseInt(window.getComputedStyle(el).fontSize) || 40;
                 html += `
-                    <input type="text" value="${el.textContent}" oninput="document.getElementById('${el.id}').textContent=this.value" style="width:100%; padding:10px; background:#000; color:#fff; border:1px solid #444; border-radius:8px; margin-top:8px;">
+                    <input type="text" value="${el.textContent}" oninput="document.getElementById('${el.id}').textContent=this.value" style="width:100%; padding:12px; background:#000; color:#fff; border:1px solid #444; border-radius:8px; margin-top:8px;">
                     <div class="label-row"><span class="label-text">YAZI BOYUTU</span><span class="value-badge" id="val-fs-${i}">${fs}px</span></div>
-                    <input type="range" id="fs-slider-${i}" min="10" max="400" value="${fs}" oninput="document.getElementById('${el.id}').style.fontSize=this.value+'px'; document.getElementById('${el.id}').setAttribute('font-size', this.value); document.getElementById('val-fs-${i}').innerText=this.value+'px';">
+                    <input type="range" id="fs-slider-${i}" min="10" max="600" value="${fs}" oninput="document.getElementById('${el.id}').style.fontSize=this.value+'px'; document.getElementById('${el.id}').setAttribute('font-size', this.value); document.getElementById('val-fs-${i}').innerText=this.value+'px';">
                     <div class="label-row"><span class="label-text">RENK</span></div>
                     <input type="color" value="${safeColor(col)}" oninput="const t=document.getElementById('${el.id}'); t.setAttribute('fill', this.value); t.style.fill=this.value;" style="width:50px; height:45px; cursor:pointer; border:none; background:none;">
                 `;
             } else {
-                const w = parseFloat(el.getAttribute("width")) || 200, h = parseFloat(el.getAttribute("height")) || 200, rx = parseFloat(el.getAttribute("rx")) || 0;
+                const w = parseFloat(el.getAttribute("width")) || 200, h = parseFloat(el.getAttribute("height")) || 200;
+                const rx = parseFloat(el.dataset.rx) || 0; // Yumuşatma verisi
                 html += `
                     <div class="label-row"><span class="label-text">GENİŞLİK</span><span class="value-badge" id="val-w-${i}">${Math.round(w)}px</span></div>
                     <input type="range" id="w-slider-${i}" min="10" max="2500" value="${w}" oninput="document.getElementById('${el.id}').setAttribute('width', this.value); document.getElementById('val-w-${i}').innerText=Math.round(this.value)+'px';">
                     <div class="label-row"><span class="label-text">YÜKSEKLİK</span><span class="value-badge" id="val-h-${i}">${Math.round(h)}px</span></div>
                     <input type="range" id="h-slider-${i}" min="10" max="2500" value="${h}" oninput="document.getElementById('${el.id}').setAttribute('height', this.value); document.getElementById('val-h-${i}').innerText=Math.round(this.value)+'px';">
                     <div class="label-row"><span class="label-text">KÖŞE YUMUŞATMA</span><span class="value-badge" id="val-r-${i}">${Math.round(rx)}px</span></div>
-                    <input type="range" id="r-slider-${i}" min="0" max="${w/2}" value="${rx}" oninput="document.getElementById('${el.id}').setAttribute('rx', this.value); document.getElementById('${el.id}').setAttribute('ry', this.value); document.getElementById('val-r-${i}').innerText=Math.round(this.value)+'px';">
+                    <input type="range" id="r-slider-${i}" min="0" max="${w/2}" value="${rx}" oninput="const img=document.getElementById('${el.id}'); img.style.clipPath='inset(0px round '+this.value+'px)'; img.dataset.rx=this.value; document.getElementById('val-r-${i}').innerText=Math.round(this.value)+'px';">
                 `;
             }
             b.innerHTML = html; f.appendChild(b);
@@ -411,7 +394,7 @@
         return c.startsWith('#') && c.length === 7 ? c : "#ffffff";
     }
 
-    // --- YENİ ÖĞE EKLEME & KAYDETME ---
+    // --- YENİ ÖĞE VE KAYIT ---
     document.getElementById('saveBtn').onclick = saveData;
     document.getElementById('addTextBtn').onclick = addNewText;
     document.getElementById('addImgBtn').onclick = () => document.getElementById('img-in').click();
@@ -435,6 +418,7 @@
             img.id = "i" + Date.now(); img.setAttribute("class", "duzenlenebilir");
             img.setAttribute("x", 100); img.setAttribute("y", 100);
             img.setAttribute("width", 300); img.setAttribute("height", 300);
+            img.dataset.rx = "0"; // Başlangıç yumuşatması
             img.setAttributeNS("http://www.w3.org/1999/xlink", "href", e.target.result);
             svg.appendChild(img); renderFields(); setupLayers();
         };
@@ -445,13 +429,13 @@
         const st = document.getElementById('status-info');
         st.innerText = "KAYDEDİLİYOR..."; st.style.display = "block";
         try {
-            document.getElementById('control-layer').innerHTML = ""; // Kayıtta tutamaçlar gitmesin diye temizle
+            document.getElementById('control-layer').innerHTML = ""; 
             const svgText = new XMLSerializer().serializeToString(document.querySelector('#canvas-inner svg'));
             const b64 = btoa(unescape(encodeURIComponent(svgText)));
             await fetch(WORKER_URL, {
                 method: "PUT",
                 headers: {"X-Auth-Key": SESSION_PASS, "X-File-Name": document.getElementById('file-selector').value},
-                body: JSON.stringify({message: "Sync Final Edit", content: b64, sha: SHA_KEY})
+                body: JSON.stringify({message: "Mobile Fix Update", content: b64, sha: SHA_KEY})
             });
             st.innerText = "BAŞARIYLA KAYDEDİLDİ!";
             setTimeout(() => st.style.display="none", 2000);
