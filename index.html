@@ -3,20 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SVG Pro Editor | Metin & Resim Tasarım</title>
+    <title>SVG Pro Editor | Akıllı Tanıma</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Montserrat:wght@800&family=Poppins:wght@700&family=Oswald:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
         :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --snap: #a855f7; --center-snap: #3b82f6; --add: #3b82f6; --img: #f97316; --error: #ef4444; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* Giriş Ekranı */
         #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 10000; }
         .login-card { background: var(--panel); padding: 40px; border-radius: 16px; width: 90%; max-width: 380px; text-align: center; border: 1px solid var(--border); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
         .login-card input { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 10px; border: 1px solid var(--border); background: #0f172a; color: white; font-size: 16px; text-align: center; }
         .login-card button { width: 100%; padding: 14px; background: var(--accent); border: none; color: white; font-weight: bold; border-radius: 10px; cursor: pointer; }
 
-        /* Uygulama Düzeni */
         #app-container { display: none; height: 100vh; width: 100vw; flex-direction: row; }
         @media (max-width: 1023px) { #app-container { flex-direction: column; } }
 
@@ -27,17 +25,15 @@
         .nav-row { display: flex; gap: 8px; margin-top: 8px; }
         #file-selector { width: 100%; padding: 10px; border-radius: 8px; background: #000; color: #fff; border: 1px solid var(--border); cursor: pointer; }
 
-        /* Buton Stilleri */
-        .btn-add-text { background: var(--add); color: white; border: none; border-radius: 8px; padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; flex: 1; transition: 0.2s; }
-        .btn-add-img { background: var(--img); color: white; border: none; border-radius: 8px; padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; flex: 1; transition: 0.2s; }
-        .btn-add-text:active, .btn-add-img:active { transform: scale(0.95); opacity: 0.8; }
+        .btn-add-text { background: var(--add); color: white; border: none; border-radius: 8px; padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; flex: 1; }
+        .btn-add-img { background: var(--img); color: white; border: none; border-radius: 8px; padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; flex: 1; }
 
         #editor-fields { flex: 1; overflow-y: auto; padding: 15px; background: rgba(0,0,0,0.1); }
         .field-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; }
         .text-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #000; color: #fff; margin-bottom: 10px; font-size: 14px; }
         
-        /* Drag & Drop İmleci */
-        .duzenlenebilir { cursor: move; user-select: none; }
+        /* Önemli: Editörün tanıdığı her şey sürüklenebilir olsun */
+        text, image, .duzenlenebilir { cursor: move; user-select: none; }
 
         .control-grid { display: grid; grid-template-columns: 1fr 40px; gap: 10px; margin-bottom: 10px; }
         .font-selector { width: 100%; padding: 8px; border-radius: 6px; background: #000; color: #fff; border: 1px solid var(--border); font-size: 13px; }
@@ -138,13 +134,15 @@
             const guideLayer = document.getElementById('guide-layer');
             guideLayer.setAttribute("viewBox", mainSvg.getAttribute("viewBox"));
 
+            // YÜKLENEN SVG İÇİNDEKİ TÜM METİN VE RESİMLERE SINIF EKLE (Otomatik Tanıma)
+            mainSvg.querySelectorAll('text, image').forEach(el => el.classList.add('duzenlenebilir'));
+
             initDragAndDrop();
             renderFields();
             status.style.display = "none";
         } catch (e) { alert("Bağlantı Hatası!"); status.style.display="none"; }
     }
 
-    // --- YENİ METİN EKLEME ---
     function addNewText() {
         const svg = document.querySelector('#canvas-inner svg');
         const viewBox = svg.viewBox.baseVal;
@@ -163,7 +161,6 @@
         initDragAndDrop();
     }
 
-    // --- YENİ RESİM EKLEME ---
     function addNewImage(input) {
         const file = input.files[0];
         if (!file) return;
@@ -183,7 +180,7 @@
             svg.appendChild(newImg);
             renderFields();
             initDragAndDrop();
-            input.value = ""; // Reset input
+            input.value = "";
         };
         reader.readAsDataURL(file);
     }
@@ -300,8 +297,7 @@
 
             if (el.tagName === 'text') {
                 const txt = document.createElement('input');
-                txt.type = "text";
-                txt.className = "text-input";
+                txt.type = "text"; txt.className = "text-input";
                 txt.value = el.textContent.trim();
                 txt.oninput = function() { el.textContent = this.value; };
                 box.appendChild(txt);
@@ -327,44 +323,28 @@
                 grid.appendChild(cp);
                 box.appendChild(grid);
 
-                const rangeInfo = document.createElement('div');
                 const curSize = parseInt(window.getComputedStyle(el).fontSize) || 20;
-                rangeInfo.style.cssText = "display:flex; justify-content:space-between; font-size:10px; color:#888; margin-top:5px;";
-                rangeInfo.innerHTML = `<span>YAZI BOYUTU</span><span id="v-${i}">${curSize}px</span>`;
-                box.appendChild(rangeInfo);
-
                 const rs = document.createElement('input');
                 rs.type = "range"; rs.min = "8"; rs.max = "300"; rs.value = curSize;
                 rs.style.cssText = "width:100%; accent-color:var(--accent);";
-                rs.oninput = function() { el.style.fontSize = this.value + "px"; document.getElementById('v-' + i).innerText = this.value + "px"; };
+                rs.oninput = function() { el.style.fontSize = this.value + "px"; };
                 box.appendChild(rs);
 
             } else if (el.tagName === 'image') {
-                const wInfo = document.createElement('div');
                 const curW = parseInt(el.getAttribute('width')) || 100;
-                wInfo.style.cssText = "display:flex; justify-content:space-between; font-size:10px; color:#888; margin-top:5px;";
-                wInfo.innerHTML = `<span>GENİŞLİK</span><span id="w-${i}">${curW}px</span>`;
-                box.appendChild(wInfo);
-
                 const ws = document.createElement('input');
                 ws.type = "range"; ws.min = "10"; ws.max = "1200"; ws.value = curW;
                 ws.style.cssText = "width:100%; accent-color:var(--img); margin-bottom:10px;";
-                ws.oninput = function() { el.setAttribute('width', this.value); document.getElementById('w-' + i).innerText = this.value + "px"; };
+                ws.oninput = function() { el.setAttribute('width', this.value); };
                 box.appendChild(ws);
 
-                const hInfo = document.createElement('div');
                 const curH = parseInt(el.getAttribute('height')) || 100;
-                hInfo.style.cssText = "display:flex; justify-content:space-between; font-size:10px; color:#888;";
-                hInfo.innerHTML = `<span>YÜKSEKLİK</span><span id="h-${i}">${curH}px</span>`;
-                box.appendChild(hInfo);
-
                 const hs = document.createElement('input');
                 hs.type = "range"; hs.min = "10"; hs.max = "1200"; hs.value = curH;
                 hs.style.cssText = "width:100%; accent-color:var(--img);";
-                hs.oninput = function() { el.setAttribute('height', this.value); document.getElementById('h-' + i).innerText = this.value + "px"; };
+                hs.oninput = function() { el.setAttribute('height', this.value); };
                 box.appendChild(hs);
             }
-
             container.appendChild(box);
         });
     }
@@ -372,15 +352,14 @@
     function rgbToHex(rgb) {
         if (rgb.startsWith('#')) return rgb;
         const p = rgb.match(/\d+/g);
-        if (!p) return "#ffffff";
-        return "#" + p.map(x => parseInt(x).toString(16).padStart(2, '0')).join('').substring(0, 6);
+        return p ? "#" + p.map(x => parseInt(x).toString(16).padStart(2, '0')).join('').substring(0, 6) : "#ffffff";
     }
 
     async function saveData() {
         const btn = document.getElementById('save-btn');
         const st = document.getElementById('status-info');
         const fileName = document.getElementById('file-selector').value;
-        btn.disabled = true; st.innerText = "GitHub GÜNCELLENİYOR..."; st.style.display = "block";
+        btn.disabled = true; st.innerText = "KAYDEDİLİYOR..."; st.style.display = "block";
         try {
             const svgText = new XMLSerializer().serializeToString(document.querySelector('#canvas-inner svg'));
             const encoded = btoa(unescape(encodeURIComponent(svgText)));
