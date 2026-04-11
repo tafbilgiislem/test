@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SVG Pro Editor | Metin Ekleme & Ultra Hizalama</title>
+    <title>SVG Pro Editor | Silme & Ultra Hizalama</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Montserrat:wght@800&family=Poppins:wght@700&family=Oswald:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --snap: #a855f7; --center-snap: #3b82f6; --add: #3b82f6; }
+        :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --snap: #a855f7; --center-snap: #3b82f6; --add: #3b82f6; --error: #ef4444; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
@@ -25,7 +25,6 @@
         .nav-row { display: flex; gap: 8px; margin-top: 8px; }
         #file-selector { width: 100%; padding: 10px; border-radius: 8px; background: #000; color: #fff; border: 1px solid var(--border); cursor: pointer; }
 
-        /* Yeni Metin Ekle Butonu */
         #add-text-btn { width: 100%; padding: 10px; background: var(--add); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; margin-bottom: 10px; transition: 0.2s; }
         #add-text-btn:active { transform: scale(0.95); opacity: 0.8; }
 
@@ -34,12 +33,14 @@
         .text-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #000; color: #fff; margin-bottom: 10px; }
         
         .duzenlenebilir { cursor: move; user-select: none; }
-
         .control-grid { display: grid; grid-template-columns: 1fr 40px; gap: 10px; margin-bottom: 10px; }
         .font-selector { width: 100%; padding: 8px; border-radius: 6px; background: #000; color: #fff; border: 1px solid var(--border); font-size: 13px; }
 
         #save-btn { flex: 2; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .exit-btn { flex: 1; padding: 12px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; }
+
+        .delete-btn-ui { position: absolute; right: 10px; top: 10px; color: var(--error); cursor: pointer; font-size: 20px; font-weight: bold; opacity: 0.6; transition: 0.2s; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border-radius: 50%; }
+        .delete-btn-ui:hover { opacity: 1; background: rgba(239, 68, 68, 0.2); }
 
         #main-view { flex: 1; background: #020617; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 20px; position: relative; }
         #svg-wrapper { background: white; box-shadow: 0 0 40px rgba(0,0,0,0.6); line-height: 0; position: relative; }
@@ -47,13 +48,12 @@
         
         .guide-line { stroke: var(--snap); stroke-width: 1; stroke-dasharray: 4; pointer-events: none; }
         .center-line { stroke: var(--center-snap); stroke-width: 1.5; stroke-dasharray: none; pointer-events: none; }
-
         #status-info { position: fixed; top: 0; width: 100%; background: var(--accent); color: white; text-align: center; padding: 8px; font-weight: bold; z-index: 11000; display: none; }
     </style>
 </head>
 <body>
 
-<div id="status-info">YÜKLENİYOR...</div>
+<div id="status-info">İŞLEM YAPILIYOR...</div>
 
 <div id="login-screen">
     <div class="login-card">
@@ -139,29 +139,21 @@
         } catch (e) { alert("Bağlantı Hatası!"); status.style.display="none"; }
     }
 
-    // --- YENİ METİN EKLEME FONKSİYONU ---
     function addNewText() {
         const svg = document.querySelector('#canvas-inner svg');
         const viewBox = svg.viewBox.baseVal;
-        
-        // Benzersiz bir ID oluştur (örneğin: yeni_metin_171234567)
-        const newId = "yeni_metin_" + Date.now();
-        
+        const newId = "txt_" + Date.now();
         const newText = document.createElementNS("http://www.w3.org/2000/svg", "text");
         newText.setAttribute("id", newId);
         newText.setAttribute("class", "duzenlenebilir");
         newText.setAttribute("x", viewBox.width / 2);
         newText.setAttribute("y", viewBox.height / 2);
-        newText.setAttribute("fill", "#ff0000"); // Varsayılan kırmızı
+        newText.setAttribute("fill", "#ffffff");
         newText.style.fontSize = "40px";
         newText.style.fontFamily = "'Roboto', sans-serif";
         newText.textContent = "YENİ METİN";
-        
         svg.appendChild(newText);
-        
-        // Paneli yenile ki yeni input kutusu gelsin
         renderFields();
-        // Sürükle bırak olaylarını tekrar bağla
         initDragAndDrop();
     }
 
@@ -188,27 +180,20 @@
                 let c = getCoords(e);
                 let newX = c.x - offset.x;
                 let newY = c.y - offset.y;
-                
                 const bbox = selectedElement.getBBox();
                 const width = bbox.width;
                 const height = bbox.height;
-
                 guideLayer.innerHTML = "";
-
-                // Hizalama Noktaları
                 const targetsX = [{ val: newX, type: 'left' }, { val: newX + width / 2, type: 'center' }, { val: newX + width, type: 'right' }];
                 const targetsY = [{ val: newY, type: 'top' }, { val: newY + height / 2, type: 'center' }, { val: newY + height, type: 'bottom' }];
-
                 if (Math.abs((newX + width / 2) - centerX) < SNAP_THRESHOLD) { newX = centerX - width / 2; showGuide(centerX, 0, centerX, viewBox.height, true); }
                 if (Math.abs((newY + height / 2) - centerY) < SNAP_THRESHOLD) { newY = centerY - height / 2; showGuide(0, centerY, viewBox.width, centerY, true); }
-
                 const others = document.querySelectorAll('.duzenlenebilir');
                 others.forEach(other => {
                     if (other === selectedElement) return;
                     const ob = other.getBBox();
                     const ox = parseFloat(other.getAttribute("x")) || 0;
                     const oy = parseFloat(other.getAttribute("y")) || 0;
-
                     const otherAxsX = [ox, ox + ob.width / 2, ox + ob.width];
                     targetsX.forEach(t => {
                         otherAxsX.forEach(ax => {
@@ -220,7 +205,6 @@
                             }
                         });
                     });
-
                     const otherAxsY = [oy, oy + ob.height / 2, oy + ob.height];
                     targetsY.forEach(t => {
                         otherAxsY.forEach(ay => {
@@ -233,7 +217,6 @@
                         });
                     });
                 });
-
                 selectedElement.setAttribute("x", newX);
                 selectedElement.setAttribute("y", newY);
             }
@@ -262,33 +245,84 @@
     function renderFields() {
         const container = document.getElementById('editor-fields');
         container.innerHTML = "";
-        document.querySelectorAll('.duzenlenebilir').forEach((el, i) => {
+        const allElements = document.querySelectorAll('.duzenlenebilir');
+        
+        allElements.forEach((el, i) => {
             const box = document.createElement('div');
             box.className = 'field-box';
             
-            // Silme butonu ekle (İsteğe bağlı, eklenen metni silebilirsin)
-            const deleteBtn = document.createElement('span');
-            deleteBtn.innerHTML = "×";
-            deleteBtn.style.cssText = "position:absolute; right:10px; top:5px; color:#555; cursor:pointer; font-size:18px; font-weight:bold;";
-            deleteBtn.onclick = () => { if(confirm("Bu metni silmek istiyor musun?")) { el.remove(); renderFields(); }};
-            box.appendChild(deleteBtn);
+            // SİLME BUTONU (Garantili Yöntem)
+            const delBtn = document.createElement('div');
+            delBtn.className = 'delete-btn-ui';
+            delBtn.innerHTML = "×";
+            delBtn.onclick = function() {
+                if(confirm("Bu metni silmek istediğinize emin misiniz?")) {
+                    el.remove();
+                    renderFields();
+                }
+            };
+            box.appendChild(delBtn);
 
-            box.innerHTML += `
-                <div style="font-size:10px; color:#94a3b8; font-weight:bold; margin-bottom:8px;">${(el.id || 'ALAN').toUpperCase()}</div>
-                <input type="text" class="text-input" value="${el.textContent.trim()}" oninput="document.querySelectorAll('.duzenlenebilir')[${i}].textContent = this.value">
-                <div class="control-grid">
-                    <select class="font-selector" onchange="document.querySelectorAll('.duzenlenebilir')[${i}].style.fontFamily = this.value">
-                        ${fonts.map(f => `<option value="${f.val}" ${el.style.fontFamily === f.val ? 'selected' : ''}>${f.name}</option>`).join('')}
-                    </select>
-                    <input type="color" style="width:40px; height:40px; border:none; border-radius:6px; cursor:pointer;" 
-                        value="${rgbToHex(window.getComputedStyle(el).fill)}" 
-                        oninput="const e=document.querySelectorAll('.duzenlenebilir')[${i}]; e.setAttribute('fill', this.value); e.style.setProperty('fill', this.value, 'important');">
-                </div>
-                <input type="range" min="8" max="250" value="${parseInt(window.getComputedStyle(el).fontSize)}" 
-                    oninput="document.querySelectorAll('.duzenlenebilir')[${i}].style.fontSize = this.value+'px'; document.getElementById('v-${i}').innerText = this.value+'px';" 
-                    style="width:100%; accent-color:var(--accent);">
-                <div style="text-align:right; font-size:9px; color:#555;" id="v-${i}">${parseInt(window.getComputedStyle(el).fontSize)}px</div>
-            `;
+            // Başlık
+            const title = document.createElement('div');
+            title.style.cssText = "font-size:10px; color:#94a3b8; font-weight:bold; margin-bottom:8px;";
+            title.innerText = (el.id || 'ALAN').toUpperCase();
+            box.appendChild(title);
+
+            // Metin Girişi
+            const txt = document.createElement('input');
+            txt.type = "text";
+            txt.className = "text-input";
+            txt.value = el.textContent.trim();
+            txt.oninput = function() { el.textContent = this.value; };
+            box.appendChild(txt);
+
+            // Font ve Renk Satırı
+            const grid = document.createElement('div');
+            grid.className = "control-grid";
+
+            const fs = document.createElement('select');
+            fs.className = "font-selector";
+            fonts.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.val;
+                opt.innerText = f.name;
+                if(el.style.fontFamily === f.val) opt.selected = true;
+                fs.appendChild(opt);
+            });
+            fs.onchange = function() { el.style.fontFamily = this.value; };
+            grid.appendChild(fs);
+
+            const cp = document.createElement('input');
+            cp.type = "color";
+            cp.style.cssText = "width:40px; height:40px; border:none; border-radius:6px; cursor:pointer;";
+            cp.value = rgbToHex(window.getComputedStyle(el).fill);
+            cp.oninput = function() { 
+                el.setAttribute('fill', this.value); 
+                el.style.setProperty('fill', this.value, 'important'); 
+            };
+            grid.appendChild(cp);
+            box.appendChild(grid);
+
+            // Boyut Sliderı
+            const rangeInfo = document.createElement('div');
+            const curSize = parseInt(window.getComputedStyle(el).fontSize) || 20;
+            rangeInfo.style.cssText = "display:flex; justify-content:space-between; font-size:10px; color:#888; margin-top:5px;";
+            rangeInfo.innerHTML = `<span>BOYUT</span><span id="v-${i}">${curSize}px</span>`;
+            box.appendChild(rangeInfo);
+
+            const rs = document.createElement('input');
+            rs.type = "range";
+            rs.min = "8";
+            rs.max = "250";
+            rs.value = curSize;
+            rs.style.cssText = "width:100%; accent-color:var(--accent);";
+            rs.oninput = function() {
+                el.style.fontSize = this.value + "px";
+                document.getElementById('v-' + i).innerText = this.value + "px";
+            };
+            box.appendChild(rs);
+
             container.appendChild(box);
         });
     }
@@ -296,6 +330,7 @@
     function rgbToHex(rgb) {
         if (rgb.startsWith('#')) return rgb;
         const p = rgb.match(/\d+/g);
+        if (!p) return "#ffffff";
         return "#" + p.map(x => parseInt(x).toString(16).padStart(2, '0')).join('').substring(0, 6);
     }
 
@@ -303,14 +338,14 @@
         const btn = document.getElementById('save-btn');
         const st = document.getElementById('status-info');
         const fileName = document.getElementById('file-selector').value;
-        btn.disabled = true; st.innerText = "KAYDEDİLİYOR..."; st.style.display = "block";
+        btn.disabled = true; st.innerText = "GitHub GÜNCELLENİYOR..."; st.style.display = "block";
         try {
             const svgText = new XMLSerializer().serializeToString(document.querySelector('#canvas-inner svg'));
             const encoded = btoa(unescape(encodeURIComponent(svgText)));
             const res = await fetch(WORKER_URL, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json", "X-Auth-Key": SESSION_PASS, "X-File-Name": fileName },
-                body: JSON.stringify({ message: "New Text and Alignment Update", content: encoded, sha: SHA_KEY })
+                body: JSON.stringify({ message: "Silme ve Guncelleme", content: encoded, sha: SHA_KEY })
             });
             if (res.ok) {
                 const data = await res.json();
