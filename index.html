@@ -3,20 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SVG Pro Editor | Font & Drag</title>
+    <title>SVG Pro Editor | Akıllı Hizalama</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Montserrat:wght@800&family=Poppins:wght@700&family=Oswald:wght@700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; }
+        :root { --accent: #10b981; --bg: #0f172a; --panel: #1e293b; --border: #334155; --snap: #a855f7; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* Giriş Ekranı */
         #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 10000; }
         .login-card { background: var(--panel); padding: 40px; border-radius: 16px; width: 90%; max-width: 380px; text-align: center; border: 1px solid var(--border); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
         .login-card input { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 10px; border: 1px solid var(--border); background: #0f172a; color: white; font-size: 16px; text-align: center; }
         .login-card button { width: 100%; padding: 14px; background: var(--accent); border: none; color: white; font-weight: bold; border-radius: 10px; cursor: pointer; }
 
-        /* Ana Uygulama */
         #app-container { display: none; height: 100vh; width: 100vw; flex-direction: row; }
         @media (max-width: 1023px) { #app-container { flex-direction: column; } }
 
@@ -33,16 +31,19 @@
         
         .duzenlenebilir { cursor: move; user-select: none; }
 
-        /* Font ve Renk Row */
         .control-grid { display: grid; grid-template-columns: 1fr 40px; gap: 10px; margin-bottom: 10px; }
         .font-selector { width: 100%; padding: 8px; border-radius: 6px; background: #000; color: #fff; border: 1px solid var(--border); font-size: 13px; }
 
         #save-btn { flex: 2; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .exit-btn { flex: 1; padding: 12px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; }
 
-        #main-view { flex: 1; background: #020617; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 20px; }
-        #svg-wrapper { background: white; box-shadow: 0 0 40px rgba(0,0,0,0.6); position: relative; }
+        #main-view { flex: 1; background: #020617; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 20px; position: relative; }
+        #svg-wrapper { background: white; box-shadow: 0 0 40px rgba(0,0,0,0.6); line-height: 0; position: relative; }
         svg { max-width: 100%; height: auto; display: block; overflow: visible; }
+        
+        /* Hizalama Çizgileri Stili */
+        .guide-line { stroke: var(--snap); stroke-width: 1; stroke-dasharray: 4; pointer-events: none; }
+
         #status-info { position: fixed; top: 0; width: 100%; background: var(--accent); color: white; text-align: center; padding: 8px; font-weight: bold; z-index: 11000; display: none; }
     </style>
 </head>
@@ -60,7 +61,10 @@
 
 <div id="app-container">
     <div id="main-view">
-        <div id="svg-wrapper"><div id="canvas-inner"></div></div>
+        <div id="svg-wrapper">
+            <div id="canvas-inner"></div>
+            <svg id="guide-layer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></svg>
+        </div>
     </div>
     <div id="sidebar">
         <div class="sidebar-top-nav">
@@ -84,8 +88,8 @@
     let SESSION_PASS = "";
     let selectedElement = null;
     let offset = { x: 0, y: 0 };
+    const SNAP_THRESHOLD = 5; // Kaç piksel kala yapışsın?
 
-    // Mevcut font listesi
     const fonts = [
         { name: "Varsayılan", val: "inherit" },
         { name: "Roboto", val: "'Roboto', sans-serif" },
@@ -93,8 +97,7 @@
         { name: "Poppins", val: "'Poppins', sans-serif" },
         { name: "Oswald", val: "'Oswald', sans-serif" },
         { name: "Playfair Display", val: "'Playfair Display', serif" },
-        { name: "Arial", val: "Arial, sans-serif" },
-        { name: "Courier New", val: "'Courier New', monospace" }
+        { name: "Arial", val: "Arial, sans-serif" }
     ];
 
     async function login() {
@@ -109,7 +112,6 @@
         const status = document.getElementById('status-info');
         status.innerText = fileName.toUpperCase() + " YÜKLENİYOR...";
         status.style.display = "block";
-
         try {
             const res = await fetch(WORKER_URL, { headers: { "X-Auth-Key": SESSION_PASS, "X-File-Name": fileName } });
             if (res.status === 401) { alert("Şifre Hatalı!"); status.style.display="none"; return; }
@@ -118,6 +120,12 @@
             document.getElementById('login-screen').style.display = "none";
             document.getElementById('app-container').style.display = "flex";
             document.getElementById('canvas-inner').innerHTML = decodeURIComponent(escape(atob(data.content)));
+            
+            // Guide layer boyutunu asıl SVG ile eşitle
+            const mainSvg = document.querySelector('#canvas-inner svg');
+            const guideLayer = document.getElementById('guide-layer');
+            guideLayer.setAttribute("viewBox", mainSvg.getAttribute("viewBox"));
+
             initDragAndDrop();
             renderFields();
             status.style.display = "none";
@@ -126,6 +134,8 @@
 
     function initDragAndDrop() {
         const svg = document.querySelector('#canvas-inner svg');
+        const guideLayer = document.getElementById('guide-layer');
+
         const start = (e) => {
             const t = e.target.closest('.duzenlenebilir');
             if (t) {
@@ -135,22 +145,60 @@
                 offset.y = c.y - (parseFloat(t.getAttribute("y")) || 0);
             }
         };
+
         const move = (e) => {
             if (selectedElement) {
                 e.preventDefault();
-                const c = getCoords(e);
-                selectedElement.setAttribute("x", c.x - offset.x);
-                selectedElement.setAttribute("y", c.y - offset.y);
+                let c = getCoords(e);
+                let newX = c.x - offset.x;
+                let newY = c.y - offset.y;
+
+                // HİZALAMA MANTIĞI
+                guideLayer.innerHTML = "";
+                const others = document.querySelectorAll('.duzenlenebilir');
+                
+                others.forEach(other => {
+                    if (other === selectedElement) return;
+                    
+                    const ox = parseFloat(other.getAttribute("x")) || 0;
+                    const oy = parseFloat(other.getAttribute("y")) || 0;
+
+                    // Dikey Hizalama (X ekseni)
+                    if (Math.abs(newX - ox) < SNAP_THRESHOLD) {
+                        newX = ox;
+                        showGuide(ox, -2000, ox, 2000); // Dikey çizgi
+                    }
+
+                    // Yatay Hizalama (Y ekseni)
+                    if (Math.abs(newY - oy) < SNAP_THRESHOLD) {
+                        newY = oy;
+                        showGuide(-2000, oy, 2000, oy); // Yatay çizgi
+                    }
+                });
+
+                selectedElement.setAttribute("x", newX);
+                selectedElement.setAttribute("y", newY);
             }
         };
+
+        function showGuide(x1, y1, x2, y2) {
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", x1); line.setAttribute("y1", y1);
+            line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+            line.classList.add("guide-line");
+            guideLayer.appendChild(line);
+        }
+
         const getCoords = (e) => {
             const CTM = svg.getScreenCTM();
             const touch = e.touches ? e.touches[0] : e;
             return { x: (touch.clientX - CTM.e) / CTM.a, y: (touch.clientY - CTM.f) / CTM.d };
         };
+
         svg.addEventListener('mousedown', start); svg.addEventListener('touchstart', start, {passive:false});
         window.addEventListener('mousemove', move); window.addEventListener('touchmove', move, {passive:false});
-        window.addEventListener('mouseup', () => selectedElement = null); window.addEventListener('touchend', () => selectedElement = null);
+        window.addEventListener('mouseup', () => { selectedElement = null; guideLayer.innerHTML = ""; }); 
+        window.addEventListener('touchend', () => { selectedElement = null; guideLayer.innerHTML = ""; });
     }
 
     function renderFields() {
@@ -159,60 +207,22 @@
         document.querySelectorAll('.duzenlenebilir').forEach((el, i) => {
             const box = document.createElement('div');
             box.className = 'field-box';
-            
-            // Başlık
-            const title = document.createElement('div');
-            title.style.cssText = "font-size:10px; color:#94a3b8; font-weight:bold; margin-bottom:8px;";
-            title.innerText = (el.id || 'ALAN').toUpperCase();
-            box.appendChild(title);
-
-            // Metin Input
-            const inp = document.createElement('input');
-            inp.className = "text-input";
-            inp.value = el.textContent.trim();
-            inp.oninput = (e) => { el.textContent = e.target.value; };
-            box.appendChild(inp);
-
-            // Font Seçici ve Renk Grid
-            const grid = document.createElement('div');
-            grid.className = "control-grid";
-
-            const fs = document.createElement('select');
-            fs.className = "font-selector";
-            fonts.forEach(f => {
-                const opt = document.createElement('option');
-                opt.value = f.val;
-                opt.innerText = f.name;
-                fs.appendChild(opt);
-            });
-            // Mevcut fontu seçili getir
-            const currentFont = el.style.fontFamily || "inherit";
-            fs.value = currentFont;
-            fs.onchange = (e) => { el.style.fontFamily = e.target.value; };
-            grid.appendChild(fs);
-
-            const cp = document.createElement('input');
-            cp.type = "color";
-            cp.style.cssText = "width:40px; height:40px; border:none; border-radius:6px; cursor:pointer;";
-            cp.value = rgbToHex(window.getComputedStyle(el).fill);
-            cp.oninput = (e) => { 
-                el.setAttribute('fill', e.target.value); 
-                el.style.setProperty('fill', e.target.value, 'important'); 
-            };
-            grid.appendChild(cp);
-            box.appendChild(grid);
-
-            // Boyut Slider
-            const rBox = document.createElement('div');
-            rBox.innerHTML = `
-                <div style="display:flex; justify-content:space-between; font-size:10px; color:#888; margin-top:5px;">
-                    <span>BOYUT</span><span id="v-${i}">${parseInt(window.getComputedStyle(el).fontSize)}px</span>
+            box.innerHTML = `
+                <div style="font-size:10px; color:#94a3b8; font-weight:bold; margin-bottom:8px;">${(el.id || 'ALAN').toUpperCase()}</div>
+                <input type="text" class="text-input" value="${el.textContent.trim()}" oninput="document.querySelectorAll('.duzenlenebilir')[${i}].textContent = this.value">
+                <div class="control-grid">
+                    <select class="font-selector" onchange="document.querySelectorAll('.duzenlenebilir')[${i}].style.fontFamily = this.value">
+                        ${fonts.map(f => `<option value="${f.val}" ${el.style.fontFamily === f.val ? 'selected' : ''}>${f.name}</option>`).join('')}
+                    </select>
+                    <input type="color" style="width:40px; height:40px; border:none; border-radius:6px; cursor:pointer;" 
+                        value="${rgbToHex(window.getComputedStyle(el).fill)}" 
+                        oninput="const e=document.querySelectorAll('.duzenlenebilir')[${i}]; e.setAttribute('fill', this.value); e.style.setProperty('fill', this.value, 'important');">
                 </div>
                 <input type="range" min="8" max="250" value="${parseInt(window.getComputedStyle(el).fontSize)}" 
                     oninput="document.querySelectorAll('.duzenlenebilir')[${i}].style.fontSize = this.value+'px'; document.getElementById('v-${i}').innerText = this.value+'px';" 
-                    style="width:100%; accent-color:var(--accent);">`;
-            box.appendChild(rBox);
-
+                    style="width:100%; accent-color:var(--accent);">
+                <div style="text-align:right; font-size:9px; color:#555;" id="v-${i}">${parseInt(window.getComputedStyle(el).fontSize)}px</div>
+            `;
             container.appendChild(box);
         });
     }
@@ -228,14 +238,13 @@
         const st = document.getElementById('status-info');
         const fileName = document.getElementById('file-selector').value;
         btn.disabled = true; st.innerText = "KAYDEDİLİYOR..."; st.style.display = "block";
-
         try {
             const svgText = new XMLSerializer().serializeToString(document.querySelector('#canvas-inner svg'));
             const encoded = btoa(unescape(encodeURIComponent(svgText)));
             const res = await fetch(WORKER_URL, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json", "X-Auth-Key": SESSION_PASS, "X-File-Name": fileName },
-                body: JSON.stringify({ message: "Font ve Stil Guncelleme", content: encoded, sha: SHA_KEY })
+                body: JSON.stringify({ message: "Snap Alignment Update", content: encoded, sha: SHA_KEY })
             });
             if (res.ok) {
                 const data = await res.json();
